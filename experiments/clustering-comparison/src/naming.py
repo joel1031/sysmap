@@ -1,0 +1,117 @@
+"""LLM cluster naming — the 'last mile' language layer.
+
+The algorithms decide the STRUCTURE (which files group together). The LLM only
+adds a human-readable NAME + one-line description to each group it's handed. It
+never decides membership, so it can't invent structure — it labels what's there.
+
+Grounded input = the file paths in each group (path carries dir + filename
+signal). One API call names all groups at once so the model sees the whole
+system and picks contrasting names.
+"""
+from __future__ import annotations
+import os
+from pydantic import BaseModel
+
+import anthropic
+
+MODEL = "claude-opus-4-8"
+
+
+def _budget(n_groups: int) -> int:
+    """~150 tokens per named group; 2000 truncated mid-JSON at 14 groups."""
+    return max(2000, 200 * n_groups)
+
+
+def _ask(prompt: str, n: int) -> dict[int, "GroupName"]:
+    """Stream: the SDK refuses non-streaming calls with a large max_tokens."""
+    client = anthropic.Anthropic()  # resolves ANTHROPIC_API_KEY / ant profile
+    with client.messages.stream(
+        model=MODEL,
+        max_tokens=_budget(n),
+        messages=[{"role": "user", "content": prompt}],
+        output_format=Naming,
+    ) as stream:
+        resp = stream.get_final_message()
+    return {g.index: g for g in resp.parsed_output.groups}
+
+
+class GroupName(BaseModel):
+    index: int
+    name: str          # 2-4 words, Title Case
+    description: str    # one sentence, what this subsystem does
+
+
+class Naming(BaseModel):
+    groups: list[GroupName]
+
+
+def _render_groups(groups: list[list[str]]) -> str:
+    lines = []
+    for i, g in enumerate(groups):
+        lines.append(f"Group {i} ({len(g)} files):")
+        for f in g:
+            lines.append(f"  {f}")
+    return "\n".join(lines)
+
+
+def name_groups(groups: list[list[str]], repo_name: str) -> dict[int, GroupName]:
+    """Return {index: GroupName}. Requires ANTHROPIC_API_KEY (or an ant profile)."""
+    prompt = (
+        f"These are file clusters found in the '{repo_name}' codebase by a "
+        f"community-detection algorithm run on its import/call graph. Each cluster "
+        f"is a candidate subsystem. Name each group by its apparent responsibility "
+        f"in the system.\n\n"
+        f"Rules:\n"
+        f"- name: 2-4 words, Title Case (e.g. 'Payments & Penalties', 'Bank Sync').\n"
+        f"- description: one sentence on what this subsystem does.\n"
+        f"- Ground every name ONLY in the files shown. Do not invent components.\n"
+        f"- Give every group a distinct name.\n\n"
+        f"{_render_groups(groups)}"
+    )
+    return _ask(prompt, len(groups))
+
+
+def name_layers(layers: list[list[str]], repo_name: str) -> dict[int, GroupName]:
+    """Name architectural layers (index 0 = top tier, depends downward)."""
+    body = []
+    for i, lyr in enumerate(layers):
+        pos = "TOP tier" if i == 0 else "BOTTOM tier" if i == len(layers) - 1 else "middle"
+        body.append(f"Layer {i} ({pos}, {len(lyr)} files):")
+        body.extend(f"  {f}" for f in lyr)
+    prompt = (
+        f"These are dependency LAYERS of the '{repo_name}' codebase, recovered by a "
+        f"Dependency Structure Matrix. They form a vertical stack: layer 0 is the TOP "
+        f"(entry points / high-level orchestration) and each layer depends DOWNWARD on "
+        f"the ones below it; the bottom layer is leaf infrastructure that nothing else "
+        f"depends out of.\n\n"
+        f"Name each layer by its ARCHITECTURAL ROLE in that stack (e.g. 'Entry & Routing', "
+        f"'Domain Services', 'Data & Infrastructure').\n\n"
+        f"Rules:\n"
+        f"- name: 2-4 words, Title Case.\n"
+        f"- description: one sentence on this layer's role and what it sits on/above.\n"
+        f"- Ground every name ONLY in the files shown; give each layer a distinct name.\n\n"
+        + "\n".join(body)
+    )
+    return _ask(prompt, len(layers))
+
+
+if __name__ == "__main__":
+    # smoke test on the current Leiden output
+    from pathlib import Path
+    import warnings
+    warnings.filterwarnings("ignore")
+    from src.env import load_env
+    load_env()
+    from src.extract import build_file_graph
+    from src.signals import build_signals
+    from src import methods
+
+    ROOT = Path("/Users/joelacosta/projects/SpendWell")
+    g = build_file_graph(ROOT, [ROOT / "frontend/src", ROOT / "backend/src"])
+    sig = build_signals(g["files"], g["edges"], ROOT)
+    L = methods.leiden(g["files"], g["edges"], sig["combined"])
+    names = name_groups(L["groups"], ROOT.name)
+    for i, gr in enumerate(L["groups"]):
+        n = names.get(i)
+        print(f"\n[{n.name if n else '?'}] — {n.description if n else ''}")
+        print("   " + ", ".join(f.split('/')[-1] for f in gr))
