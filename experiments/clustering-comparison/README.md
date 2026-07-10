@@ -52,7 +52,7 @@ git clone --filter=blob:none https://github.com/honojs/hono.git repos/hono
 | `extract.py` | tree-sitter AST via graphify → file graph (`{"A|B": weight}`, A depends on B) |
 | `signals.py` | the three file-pair signals: structural, lexical, evolutionary |
 | `methods.py` | grouping methods: `folders` (baseline), `leiden` (in use), `hac`, `dsm` |
-| `subsystem_graph.py` | quotients the file graph under a grouping → dependencies + crossings |
+| `subsystem_graph.py` | quotients the file graph under a grouping → dependencies + crossings, graded major/minor (`share=0.15`, `cap=3`); triages isolated groups into islands vs noise |
 | `naming.py` | LLM names subsystems and layers, grounded in their files |
 | `report.py` | static self-contained HTML |
 | `run.py` | orchestrates the above |

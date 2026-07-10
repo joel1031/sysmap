@@ -72,10 +72,17 @@ def main(argv):
             continue
         sg = m["subsystem_graph"] = build_subsystem_graph(m["groups"], edges)
         inside = sg["intra_edges"] / max(len(edges), 1)
+        majors = set(sg["majors"])
+        kept = sum(len(sg["deps"][k]) for k in majors) / max(sg["n_crossings"], 1)
+        cyc_after = sum(1 for i, j in sg["bidirectional"]
+                        if (i, j) in majors and (j, i) in majors)
         print(f"       - {m['name']}: {sg['n_subsystems']} subsystems, "
               f"{len(sg['deps'])} dependencies, {sg['n_crossings']} crossings, "
-              f"{len(sg['bidirectional'])} circular, {len(sg['isolated'])} isolated, "
+              f"{len(sg['bidirectional'])} circular, {len(sg['isolated'])} isolated "
+              f"({len(sg['islands'])} islands, {len(sg['noise'])} noise), "
               f"{inside:.0%} of edges kept inside")
+        print(f"         backbone: {len(majors)}/{len(sg['deps'])} major, "
+              f"{kept:.0%} of crossings kept, circular {len(sg['bidirectional'])} → {cyc_after}")
 
     # optional LLM naming (skipped if no API key). The Folders baseline is left
     # unnamed on purpose: it is the strawman, and a plausible name on a bad

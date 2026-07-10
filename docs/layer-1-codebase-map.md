@@ -94,6 +94,32 @@ count is architecturally meaningful, and it is also the drill-in list.
 *layout* concern, and it is impossible through a dependency loop. That decision waits until there is a
 picture to lay out.
 
+**Every dependency is graded major or minor; the map draws only the majors — the backbone.** A dependency
+is major when it carries ≥ 15% (`share`) of the crossings leaving its source subsystem; the source's
+heaviest arrow is always major (floor), and no source keeps more than 3 (`cap`). Outgoing only. Minors
+stay in the graph and are reported as a per-subsystem count — nothing is silently absent. On the
+documenso stress case this took 98 dependencies to 25 while keeping 61% of crossings and cutting mutual
+pairs on the drawn map from 45 to 3. Rejected alternatives: the **disparity filter** (a 5-subsystem graph
+has no degree distribution to be statistically significant against — it orphaned 2 of SpendWell's 5
+subsystems); **top-N per source** (blind to weight); **both-ways share and incoming floors** (each
+defeats the cap — documenso sources reached 9 and 6 majors against a cap of 3). The known tension: the
+cap is outgoing-only, so a subsystem that is only *depended on* can drop off the backbone; the
+per-subsystem minor count is the honesty mechanism, and the cap may need to grow with the subsystem
+count — unresolved until a bigger map exists.
+
+**Isolated groups are triaged by internal cohesion, not size.** No dependencies but real internal edges →
+an *island*, drawn standing alone (documenso's 15-file docs site). No dependencies and no internal edges
+→ noise, sent to a tray with a count. Verified not a resolver bug: the bulk of documenso's noise files
+have zero edges because they are framework entry points (`next.config.mjs`, `robots.ts`, Remix routes)
+loaded by path convention, not import.
+
+**Every subsystem reports how self-contained it is** — the share of its connections that stay inside it.
+A subsystem with 20 internal connections and 2 leaving still gets its strongest arrow drawn, because that
+arrow is true; the self-containment figure tells the reader not to lean on it. Rejected the alternative
+of grading an arrow against the subsystem's *total* traffic rather than its *outgoing* traffic: it
+silences large cohesive subsystems (documenso's biggest would show no arrows at all despite sending out
+588 crossings).
+
 **Hierarchical clustering is retained but not run.** Its dendrogram is a natural fit for the depth axis —
 descending is just cutting the same tree lower. It lost the breadth contest; it may win the depth one.
 
@@ -135,15 +161,12 @@ silent: a resolver that quietly drops edges produces a *beautiful, empty, wrong*
 
 ## Where Layer 1 stands
 
-**Done.** File graph, three signals, grouping, the subsystem graph (dependencies + crossings), LLM naming
-of subsystems and layers, and a static report — running against three codebases.
+**Done.** File graph, three signals, grouping, the subsystem graph (dependencies + crossings), dependency
+grading (major/minor, backbone, islands, noise tray), LLM naming of subsystems and layers, and a static
+report — running against three codebases.
 
 **Open.**
 
-- **Dependency density.** A 1,917-file monorepo yielded 11 clean subsystems but 98 dependencies between
-  them — 89% of all possible pairs. The method is not at fault; the codebase is genuinely that
-  interconnected. A readable map needs dependency *filtering*, and that forces the deferred layout and
-  cycle-resolution questions.
 - **The depth axis.** Descending into a subsystem means re-running a grouping method on only its files.
   Unbuilt. The leaf of a descent is the code itself.
 - **Multi-language support is a project, not a flag.** Non-TypeScript codebases need more than an

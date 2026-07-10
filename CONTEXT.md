@@ -40,6 +40,26 @@ more crossings; the count of crossings is the dependency's weight. Crossings are
 concrete places two subsystems touch.
 _Avoid_: bridge, bridge file (a bridge is a cut edge in graph theory — a different concept), connector, seam, port
 
+**Major Dependency**:
+A dependency that carries a meaningful share of the crossings leaving its source subsystem. Majors are
+drawn on the map. Every dependency is exactly one of major or minor.
+_Avoid_: strong edge, primary edge
+
+**Minor Dependency**:
+A dependency graded below the share threshold. It stays in the subsystem graph and is reported as a
+count per subsystem, but is not drawn on the map. Nothing is silently absent.
+_Avoid_: weak edge, filtered edge, hidden edge
+
+**Backbone**:
+The major dependencies of a subsystem graph, taken together — the arrows the map draws.
+_Avoid_: skeleton, core graph
+
+**Island**:
+A subsystem with no dependencies in either direction but real internal wiring. Drawn on the map,
+standing alone. Distinct from noise — an isolated group with no internal edges either, which goes to a
+tray with a count.
+_Avoid_: orphan, disconnected component
+
 ### The artifacts
 
 **File Graph**:
