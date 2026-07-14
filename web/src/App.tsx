@@ -8,7 +8,6 @@ import './App.css';
 
 export default function App() {
   const [repo, setRepo] = useState('');
-  const [targets, setTargets] = useState('src');
   const [doc, setDoc] = useState<MapDocument | null>(null);
   const [mode, setMode] = useState<Placement>('rows');
   const [busy, setBusy] = useState(false);
@@ -19,14 +18,14 @@ export default function App() {
       setBusy(true);
       setError(null);
       try {
-        setDoc(await fetchMap(repo.trim(), targets.split(/[\s,]+/).filter(Boolean), refresh));
+        setDoc(await fetchMap(repo.trim(), refresh));
       } catch (e) {
         setError(String(e));
       } finally {
         setBusy(false);
       }
     },
-    [repo, targets],
+    [repo],
   );
 
   const backboneCount = doc?.connections.filter((c) => c.on_backbone).length ?? 0;
@@ -40,12 +39,6 @@ export default function App() {
           onChange={(e) => setRepo(e.target.value)}
           placeholder="/path/to/repo"
           size={38}
-        />
-        <input
-          value={targets}
-          onChange={(e) => setTargets(e.target.value)}
-          placeholder="target dirs (e.g. src, or: apps packages)"
-          size={24}
         />
         <button onClick={() => load()} disabled={busy || !repo.trim()}>
           {busy ? 'running the pipeline…' : 'map it'}

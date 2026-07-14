@@ -149,7 +149,7 @@ if __name__ == "__main__":
     from engine.grouping import leiden
 
     ROOT = Path("/Users/joelacosta/projects/SpendWell")
-    g = build_file_graph(ROOT, [ROOT / "frontend/src", ROOT / "backend/src"])
+    g = build_file_graph(ROOT)
     sig = build_signals(g["files"], g["edges"], ROOT)
     m = leiden(g["files"], g["edges"], sig["combined"])
     sg = build_subsystem_graph(m["groups"], g["edges"])

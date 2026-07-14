@@ -5,10 +5,13 @@ dependencies inside subsystems vs HAC's 26-52%, i.e. 2-6x fewer arrows to draw.
 methods.hac() stays in methods.py - its dendrogram is the candidate for the
 depth axis - but it no longer runs here.
 
+File selection is whatever `git ls-files` returns for the repo - the whole tree,
+respecting .gitignore, narrowed by the extension filter. No target directories.
+
 Usage:
-  python run.py                                    # defaults to SpendWell
-  python run.py <repo_root> <target_dir> [...]     # any repo, one or more target subdirs
-  python run.py <repo_root> <target_dir> --exts .py  # override the source extensions
+  python run.py                       # defaults to SpendWell
+  python run.py <repo_root>           # any repo
+  python run.py <repo_root> --exts .py  # override the source extensions
 """
 import sys
 from pathlib import Path
@@ -25,7 +28,6 @@ from src import methods
 from src.report import render
 
 DEFAULT_ROOT = Path("/Users/joelacosta/projects/SpendWell")
-DEFAULT_TARGETS = ["frontend/src", "backend/src"]
 OUT = Path(__file__).resolve().parent / "out"
 OUT.mkdir(exist_ok=True)
 
@@ -42,16 +44,12 @@ def main(argv):
         exts = {e if e.startswith(".") else f".{e}" for e in argv[i + 1].split(",")}
         del argv[i:i + 2]
 
-    if len(argv) >= 2:
-        root = Path(argv[1]).resolve()
-        targets = [root / t for t in argv[2:]] or [root / "src"]
-    else:
-        root, targets = DEFAULT_ROOT, [DEFAULT_ROOT / t for t in DEFAULT_TARGETS]
+    root = Path(argv[1]).resolve() if len(argv) >= 2 else DEFAULT_ROOT
     name = root.name
 
-    print(f"repo: {root}  targets: {[str(t.relative_to(root)) for t in targets]}")
+    print(f"repo: {root}")
     print("[1/4] structural graph (graphify)…")
-    g = build_file_graph(root, targets, exts=exts)
+    g = build_file_graph(root, exts=exts)
     files, edges = g["files"], g["edges"]
     print("      ", g["_diag"])
 

@@ -7,10 +7,11 @@ Direction is preserved (needed for the DSM layering method).
 """
 from __future__ import annotations
 import re
+import subprocess
 from collections import Counter
 from pathlib import Path
 
-from graphify.extract import extract, collect_files
+from graphify.extract import extract
 
 # --- id normalization ------------------------------------------------------
 # graphify file id  : normalize(full path)                e.g. ..._button_tsx
@@ -27,24 +28,24 @@ def _abs(p: str | None) -> str | None:
     return None if p is None else str((Path.cwd() / p).resolve())
 
 
-_TEST_DIR = re.compile(r"/(__tests__|tests?)/")
-
-
-def is_test(path: str) -> bool:
-    return ".test." in path or ".spec." in path or bool(_TEST_DIR.search(path))
-
-
 CODE_EXT = {".ts", ".tsx", ".js", ".jsx", ".mjs", ".cts", ".mts"}
 
 
-def build_file_graph(repo_root: Path, targets: list[Path], exclude_tests: bool = True,
-                     exts: set[str] | None = None):
+def tracked_files(repo_root: Path) -> list[Path]:
+    """Every file git tracks in this repo, absolute. Respects .gitignore for
+    free (node_modules, build output, etc. never appear because the repo
+    itself already declared them junk) - no directory-walking, no ignore
+    rules of our own to maintain."""
+    out = subprocess.run(
+        ["git", "-C", str(repo_root), "ls-files", "-z"],
+        capture_output=True, check=True,
+    ).stdout
+    return [repo_root / p for p in out.decode().split("\0") if p]
+
+
+def build_file_graph(repo_root: Path, exts: set[str] | None = None):
     exts = exts or CODE_EXT
-    files = []
-    for t in targets:
-        files += collect_files(t)
-    files = [f for f in files
-             if f.suffix in exts and not (exclude_tests and is_test(str(f)))]
+    files = [f for f in tracked_files(repo_root) if f.suffix in exts]
 
     res = extract(files, cache_root=Path("."), parallel=False)
     nodes, edges = res["nodes"], res["edges"]
@@ -109,8 +110,7 @@ if __name__ == "__main__":
     import json, sys
 
     ROOT = Path("/Users/joelacosta/projects/SpendWell")
-    TARGETS = [ROOT / "frontend/src", ROOT / "backend/src"]
-    g = build_file_graph(ROOT, TARGETS)
+    g = build_file_graph(ROOT)
     out = Path(__file__).resolve().parent.parent / "out"
     out.mkdir(exist_ok=True)
     (out / "structural.json").write_text(json.dumps(g, indent=2))
