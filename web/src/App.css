@@ -6,6 +6,8 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  background: var(--page);
+  color: var(--text);
 }
 
 header {
@@ -13,22 +15,19 @@ header {
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  border-bottom: 1px solid #e3e7ee;
-  background: #fafbfc;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
   flex-wrap: wrap;
 }
 
-header input,
 header button {
   font: inherit;
   font-size: 13px;
   padding: 5px 9px;
-  border: 1px solid #cdd4de;
+  border: 1px solid var(--btn-border);
   border-radius: 6px;
-  background: white;
-}
-
-header button {
+  background: var(--btn-bg);
+  color: var(--text);
   cursor: pointer;
 }
 
@@ -37,9 +36,15 @@ header button:disabled {
   cursor: default;
 }
 
+header .theme-toggle {
+  margin-left: auto;
+  border-radius: 999px;
+  padding: 5px 11px;
+}
+
 .meta {
   font-size: 12.5px;
-  color: #6a737d;
+  color: var(--text-dim);
 }
 
 main {
@@ -50,12 +55,12 @@ main {
 .empty,
 .error {
   padding: 40px;
-  color: #6a737d;
+  color: var(--text-dim);
   max-width: 520px;
 }
 
 .error {
-  color: #b0473f;
+  color: var(--error);
 }
 
 .subsystem-box {
@@ -64,13 +69,20 @@ main {
   justify-content: center;
   text-align: center;
   padding: 8px 12px;
-  border: 2px solid;
-  border-radius: 10px;
+  border: 1.5px solid;
+  border-radius: 8px;
   font-weight: 600;
   line-height: 1.25;
+  color: var(--text);
 }
 
 .subsystem-box .port {
   opacity: 0;
   pointer-events: none;
+}
+
+/* Resting connections: uniform faint tracks (stroke color lives here so the
+   theme toggle reaches it; width stays inline until phase 2 removes it). */
+.react-flow__edge-path {
+  stroke: var(--track);
 }

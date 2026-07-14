@@ -3,6 +3,9 @@
 Vocabulary in this document is defined in [`CONTEXT.md`](../CONTEXT.md). Product principles live in
 [`CLAUDE.md`](../CLAUDE.md).
 
+# How to run:
+Run `/Users/joelacosta/projects/system-design/bin/map` from any dir.
+
 ## Where Layer 1 sits
 
 The product has three layers, and they stack:

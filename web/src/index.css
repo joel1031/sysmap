@@ -1,8 +1,43 @@
+/* Two palettes, switched by data-theme on <html>. Dark is the default —
+   the "Signal" look: near-black, vivid box outlines, soft glow. */
+:root[data-theme='dark'] {
+  --page: #0a0c11;
+  --surface: #12161f;
+  --border: #262d3a;
+  --text: #dce3ee;
+  --text-dim: #8b95a7;
+  --dot: #1a1f2b;
+  --track: #2a3247;
+  --box-base: #10141d;
+  --box-tint: 9%;
+  --glow: 12px;
+  --btn-bg: #151a26;
+  --btn-border: #303950;
+  --error: #e0736b;
+}
+
+:root[data-theme='light'] {
+  --page: #f7f8fa;
+  --surface: #fafbfc;
+  --border: #e3e7ee;
+  --text: #24292f;
+  --text-dim: #6a737d;
+  --dot: #dde2ea;
+  --track: #c3cbd9;
+  --box-base: #ffffff;
+  --box-tint: 14%;
+  --glow: 0px;
+  --btn-bg: #ffffff;
+  --btn-border: #cdd4de;
+  --error: #b0473f;
+}
+
 html,
 body,
 #root {
   margin: 0;
   height: 100%;
   font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
-  color: #24292f;
+  color: var(--text);
+  background: var(--page);
 }

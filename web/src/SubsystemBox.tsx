@@ -19,8 +19,9 @@ export function SubsystemBox({ data }: NodeProps) {
       style={{
         width: w,
         height: h,
-        background: `color-mix(in srgb, ${color} 14%, white)`,
+        background: `color-mix(in srgb, ${color} var(--box-tint), var(--box-base))`,
         borderColor: color,
+        boxShadow: `0 0 var(--glow) color-mix(in srgb, ${color} 35%, transparent)`,
         fontSize: sizeStep === 3 ? 16 : sizeStep === 2 ? 14 : 12.5,
       }}
     >

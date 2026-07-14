@@ -15,6 +15,11 @@ export default function App() {
   const [doc, setDoc] = useState<MapDocument | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
 
   const load = useCallback(async (refresh = false) => {
     if (!REPO) return;
@@ -50,6 +55,13 @@ export default function App() {
             </button>
           </>
         )}
+        <button
+          className="theme-toggle"
+          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          title="switch theme"
+        >
+          {theme === 'dark' ? '☀' : '☾'}
+        </button>
       </header>
       <main>
         {!REPO && (
@@ -62,7 +74,7 @@ export default function App() {
         {busy && !doc && <div className="empty">Running the pipeline…</div>}
         {doc && (
           <ReactFlowProvider>
-            <MapView doc={doc} />
+            <MapView doc={doc} theme={theme} />
           </ReactFlowProvider>
         )}
       </main>

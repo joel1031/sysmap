@@ -13,10 +13,11 @@ import { place } from './layout';
 import type { Positions } from './layout';
 import { SubsystemBox } from './SubsystemBox';
 
+// Vivid enough to read as outlines on near-black, mid enough for light mode.
 const PALETTE = [
-  '#4f6df5', '#e8833a', '#3aa675', '#c0497f', '#7d5bd0', '#2f9bbf',
-  '#b0913a', '#d0574f', '#5b8c3a', '#8a6d5b', '#7a7f8c', '#5f9ea0',
-  '#c46a9e',
+  '#5c7cfa', '#22c1a3', '#e8a33d', '#e05f8a', '#9a6dd7', '#38b6d9',
+  '#a3b845', '#e07a4f', '#5fa87a', '#c46a9e', '#8a93ad', '#d9b96a',
+  '#5f9ea0',
 ];
 
 const nodeTypes = { subsystem: SubsystemBox };
@@ -52,16 +53,16 @@ function buildEdges(doc: MapDocument): Edge[] {
       id: c.id,
       source,
       target,
-      style: { strokeWidth: width, stroke: '#94a0b4' },
-      markerEnd: { type: MarkerType.ArrowClosed, color: '#94a0b4', width: 18 / width + 8, height: 18 / width + 8 },
+      style: { strokeWidth: width },
+      markerEnd: { type: MarkerType.ArrowClosed, color: '#7a8499', width: 18 / width + 8, height: 18 / width + 8 },
       markerStart: twoHeaded
-        ? { type: MarkerType.ArrowClosed, color: '#94a0b4', width: 18 / width + 8, height: 18 / width + 8 }
+        ? { type: MarkerType.ArrowClosed, color: '#7a8499', width: 18 / width + 8, height: 18 / width + 8 }
         : undefined,
     };
   });
 }
 
-export function MapView({ doc }: { doc: MapDocument }) {
+export function MapView({ doc, theme }: { doc: MapDocument; theme: 'dark' | 'light' }) {
   const [nodes, setNodes] = useState<Node[]>([]);
   const edges = useMemo(() => buildEdges(doc), [doc]);
   const { fitView } = useReactFlow();
@@ -86,8 +87,9 @@ export function MapView({ doc }: { doc: MapDocument }) {
       onNodesChange={() => {}}
       proOptions={{ hideAttribution: true }}
       minZoom={0.2}
+      colorMode={theme}
     >
-      <Background gap={24} color="#e3e7ee" />
+      <Background gap={24} color={theme === 'dark' ? '#1a1f2b' : '#dde2ea'} />
       <Controls showInteractive={false} />
     </ReactFlow>
   );
