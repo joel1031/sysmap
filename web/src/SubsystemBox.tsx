@@ -42,9 +42,9 @@ export function SubsystemBox({ data }: NodeProps) {
       <Handle type="target" position={Position.Top} className="port" />
       {Icon && (
         <Icon
-          size={sizeStep === 3 ? 17 : sizeStep === 2 ? 15 : 13}
+          size={sizeStep === 3 ? 22 : sizeStep === 2 ? 19 : 16}
           color={color}
-          strokeWidth={2.2}
+          strokeWidth={2.1}
         />
       )}
       <span>{label}</span>

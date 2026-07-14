@@ -31,8 +31,14 @@ export async function place(doc: MapDocument): Promise<Positions> {
     layoutOptions: {
       'elk.algorithm': 'layered',
       'elk.direction': 'DOWN',
-      'elk.spacing.nodeNode': '60',
-      'elk.layered.spacing.nodeNodeBetweenLayers': '90',
+      // Wide lanes inside a row so lines can pass between boxes, tighter
+      // rows so long lines travel less, and box placement that favors
+      // straight lines over a centered column (the centered default funnels
+      // every long connection through the same middle corridor).
+      'elk.spacing.nodeNode': '110',
+      'elk.layered.spacing.nodeNodeBetweenLayers': '80',
+      'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
+      'elk.layered.thoroughness': '30',
     },
     children: doc.subsystems.map((s) => ({
       id: s.id,
