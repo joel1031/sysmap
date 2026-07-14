@@ -14,7 +14,7 @@ from pydantic import BaseModel
 
 import anthropic
 
-MODEL = "claude-opus-4-8"
+MODEL = "claude-haiku-4-5-20251001"
 
 # The fixed icon set the model picks from — Lucide icon names, kebab-case,
 # exactly as the page's icon package spells them. Adding here is safe; the
