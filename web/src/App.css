@@ -104,3 +104,50 @@ main {
     stroke-dashoffset: -28;
   }
 }
+
+/* The anchored card — beside the thing you clicked. */
+.detail-card {
+  position: fixed;
+  z-index: 20;
+  width: max-content;
+  max-width: 360px;
+  max-height: 60vh;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--btn-border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+  font-size: 12.5px;
+}
+
+.detail-card h4 {
+  margin: 0 0 6px;
+  font-size: 13px;
+}
+
+.detail-card p {
+  margin: 0 0 8px;
+  color: var(--text-dim);
+  line-height: 1.45;
+  max-width: 300px;
+}
+
+.detail-card .fact {
+  color: var(--text-dim);
+  padding: 1.5px 0;
+}
+
+.detail-card .direction + .direction {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.detail-card .crossings {
+  margin-top: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10.5px;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
