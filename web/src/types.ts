@@ -36,7 +36,9 @@ export interface MapDocument {
   repo: string;
   subsystems: Subsystem[];
   connections: Connection[];
-  tray: { count: number; n_files: number; group_ids: string[] };
+  // `files` is absent in map documents cached before it existed; a re-map
+  // fills it in.
+  tray: { count: number; n_files: number; files?: string[]; group_ids: string[] };
   backbone: {
     majors: number;
     dependencies: number;

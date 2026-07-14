@@ -87,6 +87,7 @@ def build_map(repo_name: str, groups: list[list[str]], sg: dict, names=None) -> 
         "tray": {
             "count": len(sg["noise"]),
             "n_files": sum(len(groups[i]) for i in sg["noise"]),
+            "files": [f for i in sorted(sg["noise"]) for f in groups[i]],
             "group_ids": [sid[i] for i in sg["noise"]],
         },
         "backbone": {

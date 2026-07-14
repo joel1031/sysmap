@@ -48,7 +48,6 @@ export default function App() {
           <>
             <span className="meta">
               {doc.subsystems.length} subsystems · {backboneCount} connections
-              {doc.tray.count > 0 && <> · tray: {doc.tray.count}</>}
             </span>
             <button onClick={() => load(true)} disabled={busy}>
               {busy ? 're-mapping…' : 're-map'}

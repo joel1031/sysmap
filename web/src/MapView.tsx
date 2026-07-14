@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   Background,
   Controls,
+  Panel,
   ReactFlow,
   applyNodeChanges,
   useReactFlow,
@@ -12,6 +13,7 @@ import type { MapDocument } from './types';
 import { place } from './layout';
 import type { Positions } from './layout';
 import { SubsystemBox } from './SubsystemBox';
+import { GhostBox } from './GhostBox';
 import { ConnectionEdge } from './ConnectionEdge';
 import type { Flow } from './ConnectionEdge';
 import { DetailCard } from './DetailCard';
@@ -31,7 +33,7 @@ const PALETTE = [
   '#5f9ea0',
 ];
 
-const nodeTypes = { subsystem: SubsystemBox };
+const nodeTypes = { subsystem: SubsystemBox, ghost: GhostBox };
 const edgeTypes = { connection: ConnectionEdge };
 
 function buildNodes(doc: MapDocument, pos: Positions): Node[] {
@@ -80,8 +82,39 @@ function buildEdges(
     });
 }
 
+// The noise files, laid out as rows of ghosts a little below the map.
+function buildGhosts(doc: MapDocument, pos: Positions): Node[] {
+  const files = doc.tray.files ?? [];
+  const placed = Object.values(pos);
+  if (!files.length || !placed.length) return [];
+  const minX = Math.min(...placed.map((p) => p.x));
+  const maxY = Math.max(...placed.map((p) => p.y));
+  let x = minX;
+  let y = maxY + 160;
+  return files.map((f, i) => {
+    const label = f.split('/').pop() ?? f;
+    const w = 26 + label.length * 6.2;
+    if (x + w > minX + 940) {
+      x = minX;
+      y += 40;
+    }
+    const node: Node = {
+      id: `ghost-${i}`,
+      type: 'ghost',
+      position: { x, y },
+      draggable: false,
+      selectable: false,
+      data: { label, full: f },
+    };
+    x += w + 10;
+    return node;
+  });
+}
+
 export function MapView({ doc, theme }: { doc: MapDocument; theme: 'dark' | 'light' }) {
   const [nodes, setNodes] = useState<Node[]>([]);
+  const [ghosts, setGhosts] = useState<Node[]>([]);
+  const [showGhosts, setShowGhosts] = useState(false);
   const [sel, setSel] = useState<Selection>(null);
   const { fitView } = useReactFlow();
 
@@ -109,6 +142,8 @@ export function MapView({ doc, theme }: { doc: MapDocument; theme: 'dark' | 'lig
     place(doc).then((pos) => {
       if (!alive) return;
       setNodes(buildNodes(doc, pos));
+      setGhosts(buildGhosts(doc, pos));
+      setShowGhosts(false);
       requestAnimationFrame(() => fitView({ padding: 0.15 }));
     });
     return () => {
@@ -116,10 +151,15 @@ export function MapView({ doc, theme }: { doc: MapDocument; theme: 'dark' | 'lig
     };
   }, [doc, fitView]);
 
+  const allNodes = useMemo(
+    () => (showGhosts ? nodes.concat(ghosts) : nodes),
+    [nodes, ghosts, showGhosts],
+  );
+
   return (
     <>
       <ReactFlow
-        nodes={nodes}
+        nodes={allNodes}
         edges={edges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
@@ -133,6 +173,18 @@ export function MapView({ doc, theme }: { doc: MapDocument; theme: 'dark' | 'lig
       >
         <Background gap={24} color={theme === 'dark' ? '#1a1f2b' : '#dde2ea'} />
         <Controls showInteractive={false} />
+        {doc.tray.n_files > 0 && (
+          <Panel position="bottom-right">
+            <button
+              className={`chip${showGhosts ? ' chip-on' : ''}`}
+              disabled={!ghosts.length}
+              title={ghosts.length ? undefined : 're-map to list these files'}
+              onClick={() => setShowGhosts((v) => !v)}
+            >
+              {doc.tray.n_files} unwired file{doc.tray.n_files === 1 ? '' : 's'}
+            </button>
+          </Panel>
+        )}
       </ReactFlow>
       {sel && <DetailCard doc={doc} sel={sel} nodes={nodes} />}
     </>
