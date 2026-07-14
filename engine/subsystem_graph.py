@@ -144,16 +144,15 @@ if __name__ == "__main__":
     from pathlib import Path
 
     warnings.filterwarnings("ignore")
-    from src.extract import build_file_graph
-    from src.signals import build_signals
-    from src import methods
+    from engine.extract import build_file_graph
+    from engine.signals import build_signals
+    from engine.grouping import leiden
 
     ROOT = Path("/Users/joelacosta/projects/SpendWell")
     g = build_file_graph(ROOT, [ROOT / "frontend/src", ROOT / "backend/src"])
     sig = build_signals(g["files"], g["edges"], ROOT)
-    for m in (methods.leiden(g["files"], g["edges"], sig["combined"]),
-              methods.hac(g["files"], sig["combined"])):
-        sg = build_subsystem_graph(m["groups"], g["edges"])
-        print(f"\n=== subsystem graph ({m['name']}) ===")
-        print(f"file graph: {len(g['files'])} files, {len(g['edges'])} edges")
-        print(describe(sg, m["groups"]))
+    m = leiden(g["files"], g["edges"], sig["combined"])
+    sg = build_subsystem_graph(m["groups"], g["edges"])
+    print(f"\n=== subsystem graph ({m['name']}) ===")
+    print(f"file graph: {len(g['files'])} files, {len(g['edges'])} edges")
+    print(describe(sg, m["groups"]))

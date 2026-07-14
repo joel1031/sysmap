@@ -100,16 +100,16 @@ if __name__ == "__main__":
     from pathlib import Path
     import warnings
     warnings.filterwarnings("ignore")
-    from src.env import load_env
+    from engine.env import load_env
     load_env()
-    from src.extract import build_file_graph
-    from src.signals import build_signals
-    from src import methods
+    from engine.extract import build_file_graph
+    from engine.signals import build_signals
+    from engine.grouping import leiden
 
     ROOT = Path("/Users/joelacosta/projects/SpendWell")
     g = build_file_graph(ROOT, [ROOT / "frontend/src", ROOT / "backend/src"])
     sig = build_signals(g["files"], g["edges"], ROOT)
-    L = methods.leiden(g["files"], g["edges"], sig["combined"])
+    L = leiden(g["files"], g["edges"], sig["combined"])
     names = name_groups(L["groups"], ROOT.name)
     for i, gr in enumerate(L["groups"]):
         n = names.get(i)

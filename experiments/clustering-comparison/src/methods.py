@@ -1,6 +1,10 @@
-"""Phase 5 - the four grouping methods.
+"""The research baselines Leiden was judged against.
 
-Each returns a dict describing its grouping so the report can render them uniformly.
+Leiden itself is the engine's grouping method and lives in `engine/grouping.py`.
+These stay in the harness so the comparison can be re-run:
+  folders — the strawman baseline (deliberately left unnamed in reports)
+  hac     — lost the breadth contest; its dendrogram is the depth-axis candidate
+  dsm     — layering + cycle detection, a different question than grouping
 """
 from __future__ import annotations
 import os
@@ -8,47 +12,16 @@ from collections import defaultdict
 
 import numpy as np
 import networkx as nx
-import igraph as ig
-import leidenalg
 from scipy.cluster.hierarchy import linkage, fcluster
 from scipy.spatial.distance import squareform
 
-
-def _groups_to_list(labels, files):
-    g = defaultdict(list)
-    for f, lab in zip(files, labels):
-        g[lab].append(f)
-    return [sorted(v) for _, v in sorted(g.items(), key=lambda kv: -len(kv[1]))]
+from engine.grouping import groups_to_list, leiden  # noqa: F401  (re-exported for run.py)
 
 
 # --- 1. folders (baseline) -------------------------------------------------
 def folders(files):
     labels = [os.path.dirname(f) for f in files]
-    return {"name": "Folders (baseline)", "groups": _groups_to_list(labels, files)}
-
-
-# --- 2. leiden (community detection) ---------------------------------------
-def leiden(files, edges_dir, combined):
-    # community detection runs on the SPARSE structural graph (real wiring),
-    # with each real edge's weight enriched by the combined signal.
-    n = len(files)
-    idx = {f: i for i, f in enumerate(files)}
-    pair_w = {}
-    for key in edges_dir:
-        a, b = key.split("|")
-        if a in idx and b in idx:
-            i, j = sorted((idx[a], idx[b]))
-            pair_w[(i, j)] = max(pair_w.get((i, j), 0.0), float(combined[i][j]) + 0.05)
-    edges = list(pair_w.keys())
-    weights = [pair_w[e] for e in edges]
-    G = ig.Graph(n=n, edges=edges)
-    G.es["weight"] = weights
-    part = leidenalg.find_partition(
-        G, leidenalg.ModularityVertexPartition, weights="weight", seed=42)
-    return {"name": "Leiden (community detection)",
-            "groups": _groups_to_list(list(part.membership), files),
-            "metric": f"modularity = {part.modularity:.3f}",
-            "n_edges": len(edges)}
+    return {"name": "Folders (baseline)", "groups": groups_to_list(labels, files)}
 
 
 # --- 3. HAC (hierarchical) -------------------------------------------------
@@ -64,10 +37,10 @@ def hac(files, combined, k=None, method="ward"):
     coarse = fcluster(Z, t=max(2, k // 2), criterion="maxclust")
     fine = fcluster(Z, t=min(len(files), k * 2), criterion="maxclust")
     return {"name": "HAC (hierarchical / dendrogram)",
-            "groups": _groups_to_list(labels, files),
+            "groups": groups_to_list(labels, files),
             "metric": f"cut at k={k} groups ({method} linkage)",
-            "zoom": {"coarse": _groups_to_list(coarse, files),
-                     "fine": _groups_to_list(fine, files)}}
+            "zoom": {"coarse": groups_to_list(coarse, files),
+                     "fine": groups_to_list(fine, files)}}
 
 
 # --- 4. DSM (layering) -----------------------------------------------------

@@ -13,13 +13,15 @@ Usage:
 import sys
 from pathlib import Path
 
-from src.env import load_env
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root, for engine/
+
+from engine.env import load_env
 load_env()  # pull ANTHROPIC_API_KEY from .env before anything needs it
 
-from src.extract import build_file_graph
-from src.signals import build_signals
+from engine.extract import build_file_graph
+from engine.signals import build_signals
+from engine.subsystem_graph import build_subsystem_graph
 from src import methods
-from src.subsystem_graph import build_subsystem_graph
 from src.report import render
 
 DEFAULT_ROOT = Path("/Users/joelacosta/projects/SpendWell")
@@ -88,7 +90,7 @@ def main(argv):
     # unnamed on purpose: it is the strawman, and a plausible name on a bad
     # grouping only makes it look credible.
     try:
-        from src.naming import name_groups, name_layers
+        from engine.naming import name_groups, name_layers
         for m in results:
             if _is_baseline(m):
                 continue
