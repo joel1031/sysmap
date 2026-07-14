@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# Open the codebase map for the repo you're standing in.
+#
+# No path, no target directories - the repo is wherever you ran this from,
+# found by walking up to the nearest .git. Starts the local process (parses,
+# groups, names, serves the map document) and the page's dev server, opens
+# the browser, and stops both when you Ctrl+C. This is the dev-time shape of
+# the eventual packaged command - real packaging is deferred until the
+# visualizations are settled.
+set -euo pipefail
+
+find_repo_root() {
+  local dir="$PWD"
+  while [ "$dir" != "/" ]; do
+    if [ -d "$dir/.git" ]; then
+      printf '%s\n' "$dir"
+      return 0
+    fi
+    dir="$(dirname "$dir")"
+  done
+  return 1
+}
+
+REPO_ROOT="$(find_repo_root)" || {
+  echo "map: not inside a git repository" >&2
+  exit 1
+}
+
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+VENV_BIN="$PROJECT_ROOT/experiments/clustering-comparison/.venv/bin"
+SERVER_PORT=8642
+WEB_PORT=5173
+
+cd "$PROJECT_ROOT"
+"$VENV_BIN/uvicorn" server.app:app --port "$SERVER_PORT" --log-level warning &
+SERVER_PID=$!
+trap 'kill "$SERVER_PID" 2>/dev/null' EXIT
+
+echo "map: mapping $REPO_ROOT"
+
+# Open the browser once both the process and the page are answering; runs
+# alongside Vite rather than blocking on it.
+(
+  for _ in $(seq 1 100); do
+    curl -s -o /dev/null "http://localhost:$SERVER_PORT/docs" && break
+    sleep 0.1
+  done
+  for _ in $(seq 1 100); do
+    curl -s -o /dev/null "http://localhost:$WEB_PORT" && break
+    sleep 0.1
+  done
+  ENCODED_REPO="$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$REPO_ROOT")"
+  open "http://localhost:$WEB_PORT/?repo=$ENCODED_REPO"
+) &
+
+cd "$PROJECT_ROOT/web"
+npm run dev -- --port "$WEB_PORT"

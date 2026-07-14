@@ -1,30 +1,37 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 import { fetchMap } from './api';
 import type { MapDocument } from './types';
 import { MapView } from './MapView';
 import './App.css';
 
+// The `map` command resolves the repo (walking up to .git from wherever you
+// ran it) and opens this page with ?repo=<path> - there is nothing to type
+// here. Opening the page without that param means it wasn't launched via the
+// command.
+const REPO = new URLSearchParams(window.location.search).get('repo');
+
 export default function App() {
-  const [repo, setRepo] = useState('');
   const [doc, setDoc] = useState<MapDocument | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(
-    async (refresh = false) => {
-      setBusy(true);
-      setError(null);
-      try {
-        setDoc(await fetchMap(repo.trim(), refresh));
-      } catch (e) {
-        setError(String(e));
-      } finally {
-        setBusy(false);
-      }
-    },
-    [repo],
-  );
+  const load = useCallback(async (refresh = false) => {
+    if (!REPO) return;
+    setBusy(true);
+    setError(null);
+    try {
+      setDoc(await fetchMap(REPO, refresh));
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const backboneCount = doc?.connections.filter((c) => c.on_backbone).length ?? 0;
 
@@ -32,35 +39,31 @@ export default function App() {
     <div className="app">
       <header>
         <strong>{doc ? doc.repo : 'codebase map'}</strong>
-        <input
-          value={repo}
-          onChange={(e) => setRepo(e.target.value)}
-          placeholder="/path/to/repo"
-          size={38}
-        />
-        <button onClick={() => load()} disabled={busy || !repo.trim()}>
-          {busy ? 'running the pipeline…' : 'map it'}
-        </button>
         {doc && (
-          <span className="meta">
-            {doc.subsystems.length} subsystems · {backboneCount} connections
-            {doc.tray.count > 0 && <> · tray: {doc.tray.count}</>}
-          </span>
+          <>
+            <span className="meta">
+              {doc.subsystems.length} subsystems · {backboneCount} connections
+              {doc.tray.count > 0 && <> · tray: {doc.tray.count}</>}
+            </span>
+            <button onClick={() => load(true)} disabled={busy}>
+              {busy ? 're-mapping…' : 're-map'}
+            </button>
+          </>
         )}
       </header>
       <main>
+        {!REPO && (
+          <div className="error">
+            No repository given. Run <code>map</code> from inside the repo you
+            want to see.
+          </div>
+        )}
         {error && <div className="error">{error}</div>}
-        {doc ? (
+        {busy && !doc && <div className="empty">Running the pipeline…</div>}
+        {doc && (
           <ReactFlowProvider>
             <MapView doc={doc} />
           </ReactFlowProvider>
-        ) : (
-          !error && (
-            <div className="empty">
-              Point it at a repository. The first look at a large codebase takes
-              minutes; after that it is instant until the repo changes.
-            </div>
-          )
         )}
       </main>
     </div>
