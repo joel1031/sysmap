@@ -153,6 +153,22 @@ main {
   line-height: 1.6;
 }
 
+/* The selected box's one-sentence description, out of the way in a corner. */
+.description-strip {
+  max-width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+
+.description-strip strong {
+  color: var(--text);
+}
+
 /* The noise chip — a quiet pill in the map's corner. */
 .chip {
   font: inherit;

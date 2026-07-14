@@ -35,7 +35,6 @@ export function DetailCard({
     body = (
       <>
         <h4>{s.name ?? 'unnamed subsystem'}</h4>
-        {s.description && <p>{s.description}</p>}
         <div className="fact">{s.files.length} files</div>
         {s.island && <div className="fact">no connections — fully self-contained</div>}
       </>

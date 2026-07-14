@@ -178,6 +178,17 @@ export function MapView({ doc, theme }: { doc: MapDocument; theme: 'dark' | 'lig
       >
         <Background gap={24} color={theme === 'dark' ? '#1a1f2b' : '#dde2ea'} />
         <Controls showInteractive={false} />
+        {sel?.kind === 'box' &&
+          (() => {
+            // The description lives quietly in a corner, not on the click
+            // card — read it if you want it, ignore it if you're tracing.
+            const s = doc.subsystems.find((x) => x.id === sel.id);
+            return s?.description ? (
+              <Panel position="top-left" className="description-strip">
+                <strong>{s.name ?? 'unnamed subsystem'}</strong> — {s.description}
+              </Panel>
+            ) : null;
+          })()}
         {doc.tray.n_files > 0 && (
           <Panel position="bottom-right">
             <button
