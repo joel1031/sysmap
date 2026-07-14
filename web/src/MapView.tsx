@@ -3,6 +3,7 @@ import {
   Background,
   Controls,
   ReactFlow,
+  applyNodeChanges,
   useReactFlow,
 } from '@xyflow/react';
 import type { Edge, Node } from '@xyflow/react';
@@ -76,7 +77,7 @@ export function MapView({ doc, theme }: { doc: MapDocument; theme: 'dark' | 'lig
       edges={edges}
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
-      onNodesChange={() => {}}
+      onNodesChange={(changes) => setNodes((ns) => applyNodeChanges(changes, ns))}
       proOptions={{ hideAttribution: true }}
       minZoom={0.2}
       colorMode={theme}
