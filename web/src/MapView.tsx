@@ -66,11 +66,16 @@ function buildEdges(
         sel !== null &&
         ((sel.kind === 'connection' && sel.id === c.id) ||
           (sel.kind === 'box' && c.subsystems.includes(sel.id)));
+      // Only major directions flow — the line only claims to draw the
+      // backbone, so a minor back-direction must not pulse (it still shows
+      // in the connection's card). Mutual majors animate both true ways.
       const flows: Flow[] = active
-        ? c.directions.map((d) => ({
-            color: colorOf(d.source),
-            reverse: d.source !== drawn.source,
-          }))
+        ? c.directions
+            .filter((d) => d.grade === 'major')
+            .map((d) => ({
+              color: colorOf(d.source),
+              reverse: d.source !== drawn.source,
+            }))
         : [];
       return {
         id: c.id,
