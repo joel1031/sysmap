@@ -149,7 +149,21 @@ heuristic to filter around.
 **Rows won the placement decision.** Two layouts were built behind a switch: rows (boxes stacked so major
 dependencies all point one direction) and settle (boxes repelling, connections pulling like rubber bands,
 no fixed meaning to position). Rendered SpendWell and hono in both and looked — rows read as the clearer
-picture. Settle and its dependency (`d3-force`) were deleted; ELK is the only layout engine left.
+picture. Settle and its dependency (`d3-force`) were deleted; ELK is the only layout engine left. The
+question was reopened once ("fluid, like Obsidian's graph view") and resolved the same way: a physics
+layout reshuffles every run, so no spatial memory forms, and it throws away the one thing position
+encodes — direction. Fluidity comes from interaction instead: boxes drag (session-only), lines follow.
+
+**The map's look and behavior were decided by mockup comparison, not argument.** Recorded in full in
+`docs/superpowers/specs/2026-07-13-map-visual-round-1-design.md`. The short version: dark by default
+("Signal": near-black, vivid box outlines, soft glow) with a light toggle; connections are uniform faint
+still lines that attach where their two boxes face each other; direction is shown by flow — light pulses
+drifting the way the dependency points — and flow runs only when asked (click a box: every connection
+touching it animates, both directions; click a connection: just that one). Weight moved off the line's
+thickness into the connection's card, which lists the crossings behind the line. A box's card carries
+only its one-sentence description and file count. Islands get no special treatment — a box with no lines
+reads as alone on its own. Noise lives in a corner chip that toggles the files onto the map as faint
+dashed ghosts.
 
 ## Technology
 
@@ -160,7 +174,7 @@ picture. Settle and its dependency (`d3-force`) were deleted; ELK is the only la
 | Clustering / vectors | `scipy`, `scikit-learn` |
 | Naming | Anthropic API, structured output, streamed |
 | Local process | FastAPI, one endpoint (`server/`) |
-| The map | React + React Flow (boxes and lines as real elements, not a canvas), ELK (rows layout), Vite (`web/`) |
+| The map | React + React Flow (boxes and lines as real elements, not a canvas), ELK (rows layout), Vite, lucide-react (the icon set the naming step picks from) (`web/`) |
 | Harness report | static self-contained HTML, no JS — for judging the algorithm work, not the real map |
 
 Graphify is reused rather than reimplemented because the hard part of building a file graph is not
@@ -191,17 +205,15 @@ silent: a resolver that quietly drops edges produces a *beautiful, empty, wrong*
 
 **Done.** File graph (whole tracked tree via `git ls-files`), three signals, grouping, the subsystem
 graph (dependencies + crossings), dependency grading (major/minor, backbone, islands, noise), LLM naming
-of subsystems and layers, and the map document — served by a local process (`server/`) and drawn as a
-picture (`web/`), opened with one terminal command (`bin/map`) that resolves the repo from wherever it's
-run. The research harness's static HTML report still exists as the tool for judging the algorithm work
-itself.
+of subsystems and layers (name, description, icon), and the map document — served by a local process
+(`server/`) and drawn as a picture (`web/`), opened with one terminal command (`bin/map`) that resolves
+the repo from wherever it's run. The map's first visual round is built: the dark Signal look with a
+light toggle, face-to-face line attachment, flow-on-click in both directions, anchored cards for boxes
+and connections, dragging, icons, and the noise chip with ghosts. The research harness's static HTML
+report still exists as the tool for judging the algorithm work itself.
 
 **Open.**
 
-- **Visual updates.** Selection (click a box to see its minor dependencies; click a connection to see
-  what backs it), icons, island markers, and the noise tray's on-map appearance are all designed but
-  unbuilt — grouped together to be built against the user's full list of desired visual changes, once
-  that list exists, rather than piecemeal ahead of it.
 - **The depth axis.** Descending into a subsystem means re-running a grouping method on only its files.
   Unbuilt. The leaf of a descent is the code itself.
 - **Multi-language support is a project, not a flag.** Non-TypeScript codebases need more than an
