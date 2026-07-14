@@ -16,6 +16,20 @@ import anthropic
 
 MODEL = "claude-opus-4-8"
 
+# The fixed icon set the model picks from — Lucide icon names, kebab-case,
+# exactly as the page's icon package spells them. Adding here is safe; the
+# page falls back to no icon for a name it doesn't know.
+ICONS = [
+    "route", "database", "users", "mail", "shield", "settings", "file-text",
+    "globe", "server", "layout-dashboard", "credit-card", "message-square",
+    "image", "calendar", "search", "bell", "key", "lock", "wrench", "package",
+    "layers", "git-branch", "book-open", "terminal", "code", "cloud", "zap",
+    "truck", "shopping-cart", "receipt", "banknote", "table", "list-checks",
+    "flask-conical", "pen-tool", "palette", "cpu", "hard-drive", "network",
+    "workflow", "folder-open", "clipboard-list", "phone", "camera", "map",
+    "house", "heart", "star", "tag", "funnel",
+]
+
 
 def _budget(n_groups: int) -> int:
     """~150 tokens per named group; 2000 truncated mid-JSON at 14 groups."""
@@ -39,6 +53,7 @@ class GroupName(BaseModel):
     index: int
     name: str          # 2-4 words, Title Case
     description: str    # one sentence, what this subsystem does
+    icon: str           # one of ICONS, the subsystem's symbol on the map
 
 
 class Naming(BaseModel):
@@ -64,6 +79,8 @@ def name_groups(groups: list[list[str]], repo_name: str) -> dict[int, GroupName]
         f"Rules:\n"
         f"- name: 2-4 words, Title Case (e.g. 'Payments & Penalties', 'Bank Sync').\n"
         f"- description: one sentence on what this subsystem does.\n"
+        f"- icon: the best-fitting symbol for this subsystem, chosen from exactly "
+        f"this list (spell it identically): {', '.join(ICONS)}.\n"
         f"- Ground every name ONLY in the files shown. Do not invent components.\n"
         f"- Give every group a distinct name.\n\n"
         f"{_render_groups(groups)}"
@@ -89,6 +106,8 @@ def name_layers(layers: list[list[str]], repo_name: str) -> dict[int, GroupName]
         f"Rules:\n"
         f"- name: 2-4 words, Title Case.\n"
         f"- description: one sentence on this layer's role and what it sits on/above.\n"
+        f"- icon: the best-fitting symbol from exactly this list (spell it "
+        f"identically): {', '.join(ICONS)}.\n"
         f"- Ground every name ONLY in the files shown; give each layer a distinct name.\n\n"
         + "\n".join(body)
     )

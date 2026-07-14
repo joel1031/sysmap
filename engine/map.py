@@ -51,7 +51,7 @@ def build_map(repo_name: str, groups: list[list[str]], sg: dict, names=None) -> 
             "id": sid[i],
             "name": nm.name if nm else None,
             "description": nm.description if nm else None,
-            "icon": None,  # picked by naming in a later phase
+            "icon": nm.icon if nm else None,
             "files": groups[i],
             "size_step": steps[i],
             "self_containment": sg["self_containment"][i],

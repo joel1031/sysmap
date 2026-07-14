@@ -67,6 +67,7 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 7px;
   text-align: center;
   padding: 8px 12px;
   border: 1.5px solid;

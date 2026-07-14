@@ -1,18 +1,32 @@
 import { Handle, Position } from '@xyflow/react';
 import type { NodeProps } from '@xyflow/react';
+import { icons } from 'lucide-react';
 import { BOX_SIZE } from './layout';
 
 export interface BoxData {
   label: string;
   color: string;
   sizeStep: 1 | 2 | 3;
+  icon: string | null;
   [key: string]: unknown;
 }
 
-// A subsystem at rest: a name on a colored card. Nothing else.
+// The naming step picks icons by their kebab-case Lucide names; the package
+// exports them keyed in PascalCase. Unknown names fall back to no icon.
+function iconFor(name: string | null) {
+  if (!name) return undefined;
+  const pascal = name
+    .split('-')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join('');
+  return icons[pascal as keyof typeof icons];
+}
+
+// A subsystem at rest: an icon and a name on a colored card. Nothing else.
 export function SubsystemBox({ data }: NodeProps) {
-  const { label, color, sizeStep } = data as BoxData;
+  const { label, color, sizeStep, icon } = data as BoxData;
   const { w, h } = BOX_SIZE[sizeStep];
+  const Icon = iconFor(icon);
   return (
     <div
       className="subsystem-box"
@@ -26,6 +40,13 @@ export function SubsystemBox({ data }: NodeProps) {
       }}
     >
       <Handle type="target" position={Position.Top} className="port" />
+      {Icon && (
+        <Icon
+          size={sizeStep === 3 ? 17 : sizeStep === 2 ? 15 : 13}
+          color={color}
+          strokeWidth={2.2}
+        />
+      )}
       <span>{label}</span>
       <Handle type="source" position={Position.Bottom} className="port" />
     </div>

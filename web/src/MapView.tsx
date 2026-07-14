@@ -43,6 +43,7 @@ function buildNodes(doc: MapDocument, pos: Positions): Node[] {
       label: s.name ?? `subsystem ${i}`,
       color: PALETTE[i % PALETTE.length],
       sizeStep: s.size_step,
+      icon: s.icon,
     },
   }));
 }
