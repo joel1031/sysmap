@@ -3,13 +3,11 @@ import { ReactFlowProvider } from '@xyflow/react';
 import { fetchMap } from './api';
 import type { MapDocument } from './types';
 import { MapView } from './MapView';
-import type { Placement } from './layout';
 import './App.css';
 
 export default function App() {
   const [repo, setRepo] = useState('');
   const [doc, setDoc] = useState<MapDocument | null>(null);
-  const [mode, setMode] = useState<Placement>('rows');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,14 +41,6 @@ export default function App() {
         <button onClick={() => load()} disabled={busy || !repo.trim()}>
           {busy ? 'running the pipeline…' : 'map it'}
         </button>
-        <div className="mode">
-          <button className={mode === 'rows' ? 'on' : ''} onClick={() => setMode('rows')}>
-            rows
-          </button>
-          <button className={mode === 'settle' ? 'on' : ''} onClick={() => setMode('settle')}>
-            settle
-          </button>
-        </div>
         {doc && (
           <span className="meta">
             {doc.subsystems.length} subsystems · {backboneCount} connections
@@ -62,7 +52,7 @@ export default function App() {
         {error && <div className="error">{error}</div>}
         {doc ? (
           <ReactFlowProvider>
-            <MapView doc={doc} mode={mode} />
+            <MapView doc={doc} />
           </ReactFlowProvider>
         ) : (
           !error && (

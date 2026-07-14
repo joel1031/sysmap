@@ -10,7 +10,7 @@ import type { Edge, Node } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import type { MapDocument } from './types';
 import { place } from './layout';
-import type { Placement, Positions } from './layout';
+import type { Positions } from './layout';
 import { SubsystemBox } from './SubsystemBox';
 
 const PALETTE = [
@@ -61,14 +61,14 @@ function buildEdges(doc: MapDocument): Edge[] {
   });
 }
 
-export function MapView({ doc, mode }: { doc: MapDocument; mode: Placement }) {
+export function MapView({ doc }: { doc: MapDocument }) {
   const [nodes, setNodes] = useState<Node[]>([]);
   const edges = useMemo(() => buildEdges(doc), [doc]);
   const { fitView } = useReactFlow();
 
   useEffect(() => {
     let alive = true;
-    place(doc, mode).then((pos) => {
+    place(doc).then((pos) => {
       if (!alive) return;
       setNodes(buildNodes(doc, pos));
       requestAnimationFrame(() => fitView({ padding: 0.15 }));
@@ -76,7 +76,7 @@ export function MapView({ doc, mode }: { doc: MapDocument; mode: Placement }) {
     return () => {
       alive = false;
     };
-  }, [doc, mode, fitView]);
+  }, [doc, fitView]);
 
   return (
     <ReactFlow
