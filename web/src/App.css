@@ -81,8 +81,26 @@ main {
   pointer-events: none;
 }
 
-/* Resting connections: uniform faint tracks (stroke color lives here so the
-   theme toggle reaches it; width stays inline until phase 2 removes it). */
+/* Resting connections: uniform faint tracks. Color and width live here so
+   the theme toggle reaches them. */
 .react-flow__edge-path {
   stroke: var(--track);
+  stroke-width: 2;
+}
+
+/* An active connection's moving pulses — one layer per direction, drifting
+   the way that dependency points (animation-direction flips for the second
+   direction of a mutual pair). */
+.flow-pulse {
+  fill: none;
+  stroke-width: 2;
+  stroke-dasharray: 10 18;
+  stroke-linecap: round;
+  animation: pulse-drift 1.15s linear infinite;
+}
+
+@keyframes pulse-drift {
+  to {
+    stroke-dashoffset: -28;
+  }
 }

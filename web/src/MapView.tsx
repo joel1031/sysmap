@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   Background,
   Controls,
-  MarkerType,
   ReactFlow,
   useReactFlow,
 } from '@xyflow/react';
@@ -12,6 +11,7 @@ import type { MapDocument } from './types';
 import { place } from './layout';
 import type { Positions } from './layout';
 import { SubsystemBox } from './SubsystemBox';
+import { ConnectionEdge } from './ConnectionEdge';
 
 // Vivid enough to read as outlines on near-black, mid enough for light mode.
 const PALETTE = [
@@ -21,6 +21,7 @@ const PALETTE = [
 ];
 
 const nodeTypes = { subsystem: SubsystemBox };
+const edgeTypes = { connection: ConnectionEdge };
 
 function buildNodes(doc: MapDocument, pos: Positions): Node[] {
   return doc.subsystems.map((s, i) => ({
@@ -35,31 +36,21 @@ function buildNodes(doc: MapDocument, pos: Positions): Node[] {
   }));
 }
 
-// One line per pair: the connection. Thickness is the pair's crossings;
-// an arrowhead on each end that has a major dependency pointing at it.
+// One line per pair: the connection. Uniform thickness, no arrowheads — the
+// weight lives in the connection's detail card, and direction is shown by
+// flow when the connection is active.
 function buildEdges(doc: MapDocument): Edge[] {
-  const drawn = doc.connections.filter((c) => c.on_backbone);
-  const maxW = Math.max(
-    1,
-    ...drawn.map((c) => c.directions.reduce((a, d) => a + d.weight, 0)),
-  );
-  return drawn.map((c) => {
-    const majors = c.directions.filter((d) => d.grade === 'major');
-    const weight = c.directions.reduce((a, d) => a + d.weight, 0);
-    const [source, target] = [majors[0].source, majors[0].target];
-    const twoHeaded = majors.length === 2;
-    const width = 1.5 + 4.5 * (weight / maxW);
-    return {
-      id: c.id,
-      source,
-      target,
-      style: { strokeWidth: width },
-      markerEnd: { type: MarkerType.ArrowClosed, color: '#7a8499', width: 18 / width + 8, height: 18 / width + 8 },
-      markerStart: twoHeaded
-        ? { type: MarkerType.ArrowClosed, color: '#7a8499', width: 18 / width + 8, height: 18 / width + 8 }
-        : undefined,
-    };
-  });
+  return doc.connections
+    .filter((c) => c.on_backbone)
+    .map((c) => {
+      const drawn = c.directions.find((d) => d.grade === 'major') ?? c.directions[0];
+      return {
+        id: c.id,
+        source: drawn.source,
+        target: drawn.target,
+        type: 'connection',
+      };
+    });
 }
 
 export function MapView({ doc, theme }: { doc: MapDocument; theme: 'dark' | 'light' }) {
@@ -84,6 +75,7 @@ export function MapView({ doc, theme }: { doc: MapDocument; theme: 'dark' | 'lig
       nodes={nodes}
       edges={edges}
       nodeTypes={nodeTypes}
+      edgeTypes={edgeTypes}
       onNodesChange={() => {}}
       proOptions={{ hideAttribution: true }}
       minZoom={0.2}
