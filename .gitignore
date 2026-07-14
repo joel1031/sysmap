@@ -4,3 +4,4 @@ __pycache__/
 /out/
 /graphify-out/
 server/cache/
+.superpowers/
