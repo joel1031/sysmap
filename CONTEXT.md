@@ -32,7 +32,7 @@ _Avoid_: feature, metric, weight
 **Dependency**:
 A directed relationship between two subsystems: one reaches into the other. Only the structural signal
 produces dependencies, because only it has direction. Drawn as an arrow.
-_Avoid_: edge, link, connection, relation
+_Avoid_: edge, link, relation
 
 **Crossing**:
 A single file→file edge whose two files sit in different subsystems. A dependency is backed by one or
@@ -59,6 +59,20 @@ A subsystem with no dependencies in either direction but real internal wiring. D
 standing alone. Distinct from noise — an isolated group with no internal edges either, which goes to a
 tray with a count.
 _Avoid_: orphan, disconnected component
+
+**Noise**:
+An isolated group with no dependencies in either direction *and* no internal wiring — nothing to draw
+an arrow to or from. Not shown as a box; swept into a tray at the map's edge with a count. Distinct from
+an island, which is also isolated but has real wiring inside it and is drawn as its own box.
+_Avoid_: orphan, junk, dead code (noise files are often live — config files and framework entry points
+loaded by convention, not import)
+
+**Connection**:
+The drawn line joining a pair of boxes on the *map*, standing for the one or two dependencies between
+that pair. The picture-level counterpart to a dependency, the same way the map is the picture-level
+counterpart to the subsystem graph — a dependency is directed and lives in the data; a connection is
+what you see.
+_Avoid_: edge, link (those describe the data; use dependency or crossing there)
 
 ### The artifacts
 

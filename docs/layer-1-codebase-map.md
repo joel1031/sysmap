@@ -27,9 +27,8 @@ A **map**: a navigable picture explored along two axes.
 
 Breadth is built. Depth is not.
 
-The map is deliberately *not* a force-directed rendering of the whole file graph. Rendering everything
-at once is a layout choice, and it is the layout choice that produces a hairball. The map shows less,
-in a considered order.
+The map is deliberately *not* every file and every import drawn as its own dot and line. Rendering
+everything at once produces a tangle no one can read. The map shows less, in a considered order.
 
 ## The approach
 
@@ -41,7 +40,7 @@ tool from a plausible-sounding one.
 ### Pipeline
 
 ```
-source files
+source files (git ls-files, whole tracked tree)
    │  tree-sitter AST parsing (via graphify)
    ▼
 file graph            directed: file A depends on file B
@@ -54,10 +53,17 @@ groups  ──(named by LLM)──▶  subsystems
    │  quotient the file graph under the grouping
    ▼
 subsystem graph       nodes = subsystems, edges = dependencies, each backed by crossings
-   │
+   │  assembled into one document
    ▼
-static HTML report
+map document           connections (graded, on_backbone), size steps, the noise tray
+   │  served by the local process (server/), cached by git commit
+   ▼
+the map                drawn by the page (web/), opened by `bin/map`
 ```
+
+The research harness (`experiments/clustering-comparison/`) runs the same pipeline up through
+the subsystem graph and renders it as a static HTML report instead — that's how methods and
+parameters get judged before they reach the real map.
 
 ### Signals
 
@@ -113,18 +119,34 @@ an *island*, drawn standing alone (documenso's 15-file docs site). No dependenci
 have zero edges because they are framework entry points (`next.config.mjs`, `robots.ts`, Remix routes)
 loaded by path convention, not import.
 
-**Every subsystem reports how self-contained it is** — the share of its connections that stay inside it.
-A subsystem with 20 internal connections and 2 leaving still gets its strongest arrow drawn, because that
-arrow is true; the self-containment figure tells the reader not to lean on it. Rejected the alternative
-of grading an arrow against the subsystem's *total* traffic rather than its *outgoing* traffic: it
-silences large cohesive subsystems (documenso's biggest would show no arrows at all despite sending out
-588 crossings).
+**Every subsystem reports how self-contained it is** — the share of its edges that stay inside it. A
+subsystem with 20 internal edges and 2 leaving still gets its strongest arrow drawn, because that arrow
+is true; the self-containment figure tells the reader not to lean on it. Rejected the alternative of
+grading an arrow against the subsystem's *total* traffic rather than its *outgoing* traffic: it silences
+large cohesive subsystems (documenso's biggest would show no arrows at all despite sending out 588
+crossings).
 
 **Hierarchical clustering is retained but not run.** Its dendrogram is a natural fit for the depth axis —
 descending is just cutting the same tree lower. It lost the breadth contest; it may win the depth one.
 
 **The folders baseline is left unnamed.** It exists to be beaten. Giving it a plausible LLM-generated name
 only makes a bad grouping look credible.
+
+**File selection is `git ls-files`, not directory-walking.** The engine used to require a list of target
+directories per repo, walked with graphify's own directory walker — which knows nothing about a repo's
+`.gitignore`. `git ls-files` gives the whole tracked tree for free, respecting whatever the repo already
+calls junk, narrowed by the existing code-extension filter. This also removed the last reason to exclude
+test files, so they're no longer excluded. Verified on all four repos: SpendWell's boundaries stayed
+clean with tests included (`charge.test.ts` sits right beside `charge.ts`); centerpiece-api and documenso
+grew moderately in a way that reads as more honest, not smeared. hono fragmented more (9 → 20 drawn
+subsystems) because of `benchmarks/` and `runtime-tests/` — whole parallel directories, not test files
+beside source — but that's accepted as an honest reflection of that repo's actual shape rather than a
+heuristic to filter around.
+
+**Rows won the placement decision.** Two layouts were built behind a switch: rows (boxes stacked so major
+dependencies all point one direction) and settle (boxes repelling, connections pulling like rubber bands,
+no fixed meaning to position). Rendered SpendWell and hono in both and looked — rows read as the clearer
+picture. Settle and its dependency (`d3-force`) were deleted; ELK is the only layout engine left.
 
 ## Technology
 
@@ -134,7 +156,9 @@ only makes a bad grouping look credible.
 | Graph algorithms | `networkx`, `leidenalg` + `igraph` |
 | Clustering / vectors | `scipy`, `scikit-learn` |
 | Naming | Anthropic API, structured output, streamed |
-| Report | static self-contained HTML, no JS |
+| Local process | FastAPI, one endpoint (`server/`) |
+| The map | React + React Flow (boxes and lines as real elements, not a canvas), ELK (rows layout), Vite (`web/`) |
+| Harness report | static self-contained HTML, no JS — for judging the algorithm work, not the real map |
 
 Graphify is reused rather than reimplemented because the hard part of building a file graph is not
 parsing — tree-sitter does that per-file — but **resolving a reference in one file to a definition in
@@ -153,6 +177,7 @@ Test codebases, chosen to span size and shape:
 | SpendWell | 41 | React Native + Node app |
 | centerpiece-api | 151 | Deno API service |
 | hono | 186 | web framework |
+| documenso | 1,917 | full-stack app — the stress case, ~10× the next-largest repo |
 
 Correctness rests on one invariant, asserted every run: **every file edge is accounted for exactly
 once** — either as a crossing that backs some dependency, or as an edge internal to a subsystem. Nothing
@@ -161,12 +186,19 @@ silent: a resolver that quietly drops edges produces a *beautiful, empty, wrong*
 
 ## Where Layer 1 stands
 
-**Done.** File graph, three signals, grouping, the subsystem graph (dependencies + crossings), dependency
-grading (major/minor, backbone, islands, noise tray), LLM naming of subsystems and layers, and a static
-report — running against three codebases.
+**Done.** File graph (whole tracked tree via `git ls-files`), three signals, grouping, the subsystem
+graph (dependencies + crossings), dependency grading (major/minor, backbone, islands, noise), LLM naming
+of subsystems and layers, and the map document — served by a local process (`server/`) and drawn as a
+picture (`web/`), opened with one terminal command (`bin/map`) that resolves the repo from wherever it's
+run. The research harness's static HTML report still exists as the tool for judging the algorithm work
+itself.
 
 **Open.**
 
+- **Visual updates.** Selection (click a box to see its minor dependencies; click a connection to see
+  what backs it), icons, island markers, and the noise tray's on-map appearance are all designed but
+  unbuilt — grouped together to be built against the user's full list of desired visual changes, once
+  that list exists, rather than piecemeal ahead of it.
 - **The depth axis.** Descending into a subsystem means re-running a grouping method on only its files.
   Unbuilt. The leaf of a descent is the code itself.
 - **Multi-language support is a project, not a flag.** Non-TypeScript codebases need more than an
@@ -174,3 +206,7 @@ report — running against three codebases.
   currently TypeScript/React-specific. Half-fixing it would produce results that are quietly wrong.
 - **Familiarity-based adaptivity.** Cognitive-load theory says a worked example helps a newcomer and
   becomes noise to an expert. The map should recede in parts of the codebase you already know.
+- **Packaging.** `bin/map` is the dev-time shape of a terminal command; installing it for someone who
+  isn't you (a real package, a compiled page with no Node/npm dependency at install time, a story for
+  where the Anthropic API key for naming comes from) is deliberately deferred until the visuals are
+  settled.
