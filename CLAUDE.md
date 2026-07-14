@@ -17,6 +17,16 @@ Terms in this project are defined in `CONTEXT.md` and are used precisely. A **gr
 
 Per-layer documentation lives in `docs/`.
 
+## No Jargon
+
+A term is either **defined in `CONTEXT.md` and used precisely**, or it is **plain English**. There is no third option.
+
+This applies to everything — conversation, plans, code comments, docs. When explaining an idea that comes from an academic field (graph drawing, information visualization, cognitive science, compilers), do not import that field's vocabulary. Say the thing in ordinary words. "Boxes are stacked in rows so the arrows all point downward" is the explanation; "layered Sugiyama layout" is a label for it that carries no meaning to a reader who does not already know.
+
+If a borrowed term is genuinely worth keeping — it names something we will refer to repeatedly and no plain phrase is shorter — then propose adding it to `CONTEXT.md` first, with a definition, and only use it after it is written down. Never use a term and define it in passing. Never use a term you have not defined.
+
+Names of specific tools and libraries (`Leiden`, `ELK`, `React Flow`, `tree-sitter`) are fine — they are proper nouns, not concepts. What they *do* must still be described in plain English.
+
 ## The North Star
 I'm not building a tool to code faster. You're building a tool that keeps developers genuinely dangerous — sharp, informed, and irreplaceable — in a world where AI makes it easy to become a passive passenger in your own codebase.
 
