@@ -27,21 +27,34 @@ export function DetailPanel({
   doc,
   sel,
   onSelect,
+  onBack,
+  canBack,
   onClose,
 }: {
   doc: MapDocument;
   sel: Selection;
   onSelect: (s: Selection) => void;
+  onBack: () => void;
+  canBack: boolean;
   onClose: () => void;
 }) {
   return (
     <aside className="detail-panel">
-      <button className="panel-close" onClick={onClose} title="close — focus the map">
-        ×
-      </button>
+      <div className="panel-nav">
+        {canBack ? (
+          <button className="panel-back" onClick={onBack} title="back to the last thing">
+            ‹ Back
+          </button>
+        ) : (
+          <span />
+        )}
+        <button className="panel-close" onClick={onClose} title="close — focus the map">
+          ×
+        </button>
+      </div>
       {sel === null && (
         <div className="panel-empty">
-          Select a subsystem or connection to explore how it fits.
+          Select a subsystem or connection to explore its relationships.
         </div>
       )}
       {sel?.kind === 'box' && <BoxView doc={doc} id={sel.id} onSelect={onSelect} />}

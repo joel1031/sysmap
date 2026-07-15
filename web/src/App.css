@@ -155,10 +155,29 @@ main {
   }
 }
 
+/* The top bar: Back on the left, close on the right. */
+.panel-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px 2px;
+}
+
+.panel-back {
+  font: inherit;
+  font-size: 12px;
+  padding: 2px 4px;
+  border: none;
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.panel-back:hover {
+  color: var(--text);
+}
+
 .panel-close {
-  position: absolute;
-  top: 8px;
-  right: 10px;
   font: inherit;
   font-size: 18px;
   line-height: 1;
@@ -190,20 +209,20 @@ main {
 }
 
 .panel-empty {
-  padding: 26px 18px;
+  padding: 12px 18px;
   color: var(--text-dim);
   line-height: 1.5;
 }
 
 .panel-body {
-  padding: 16px 16px 28px;
+  padding: 6px 16px 28px;
 }
 
 .panel-title {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 0 26px 10px 0;
+  margin: 0 0 10px;
   font-size: 15px;
   line-height: 1.3;
 }
