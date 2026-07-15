@@ -14,6 +14,8 @@ from pydantic import BaseModel
 
 import anthropic
 
+from engine.voice import HOUSE_VOICE
+
 MODEL = "claude-haiku-4-5-20251001"
 
 # The fixed icon set the model picks from — Lucide icon names, kebab-case,
@@ -42,6 +44,7 @@ def _ask(prompt: str, n: int) -> dict[int, "GroupName"]:
     with client.messages.stream(
         model=MODEL,
         max_tokens=_budget(n),
+        system=HOUSE_VOICE,
         messages=[{"role": "user", "content": prompt}],
         output_format=Naming,
     ) as stream:
