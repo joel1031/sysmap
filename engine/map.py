@@ -35,8 +35,10 @@ def _size_steps(counts: list[int]) -> list[int]:
     return [1 + (math.log(c) > t1) + (math.log(c) > t2) for c in counts]
 
 
-def build_map(repo_name: str, groups: list[list[str]], sg: dict, names=None) -> dict:
+def build_map(repo_name: str, groups: list[list[str]], sg: dict, names=None,
+              references=None) -> dict:
     names = names or {}
+    references = references or {}
     majors = set(map(tuple, sg["majors"]))
     noise = set(sg["noise"])
     drawn = [i for i in range(sg["n_subsystems"]) if i not in noise]
@@ -68,7 +70,10 @@ def build_map(repo_name: str, groups: list[list[str]], sg: dict, names=None) -> 
             "source": sid[i], "target": sid[j],
             "weight": len(sg["deps"][(i, j)]),
             "grade": "major" if (i, j) in majors else "minor",
-            "crossings": [{"from": x, "to": y} for x, y in sg["deps"][(i, j)]],
+            "crossings": [
+                {"from": x, "to": y, "references": references.get(f"{x}|{y}", [])}
+                for x, y in sg["deps"][(i, j)]
+            ],
         } for i, j in sorted(dirs)]
         connections.append({
             "id": f"{sid[a]}~{sid[b]}",

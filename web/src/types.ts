@@ -1,8 +1,17 @@
 // The map document, as served by the local process (see engine/map.py).
 
+// One named thing the source file takes from the target, and how (see
+// CONTEXT.md: Reference). Absent on crossings from documents cached before
+// references existed; a re-map fills it in.
+export interface Reference {
+  name: string;
+  kind: 'call' | 'import' | 'use';
+}
+
 export interface Crossing {
   from: string;
   to: string;
+  references?: Reference[];
 }
 
 export interface Direction {

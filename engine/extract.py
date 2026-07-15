@@ -8,10 +8,17 @@ Direction is preserved (needed for the DSM layering method).
 from __future__ import annotations
 import re
 import subprocess
-from collections import Counter
+from collections import Counter, defaultdict
 from pathlib import Path
 
 from graphify.extract import extract
+
+# graphify relation -> our reference kind (see CONTEXT.md: Reference). Only these
+# name a concrete thing in the target file; imports_from/contains do not.
+KIND = {"calls": "call", "imports": "import", "references": "use"}
+# When one name is used more than one way, keep the most telling: a call beats a
+# bare use beats an import.
+KIND_RANK = {"call": 0, "use": 1, "import": 2}
 
 # --- id normalization ------------------------------------------------------
 # graphify file id  : normalize(full path)                e.g. ..._button_tsx
@@ -57,6 +64,8 @@ def build_file_graph(repo_root: Path, exts: set[str] | None = None):
 
     # tier-1: symbol/file id -> source_file, straight from nodes
     node_file = {n["id"]: n["source_file"] for n in nodes}
+    # readable name of a target node (a function/value/type), for references
+    node_label = {n["id"]: n.get("label") for n in nodes}
     # tier-2: exact file id (with extension) -> path
     file_id_map = {norm(str(f)): str(f) for f in files}
     # tier-3: ext-less file id -> path (longest-prefix fallback for symbol ids)
@@ -77,6 +86,8 @@ def build_file_graph(repo_root: Path, exts: set[str] | None = None):
 
     keep = {str(f) for f in files}
     weights: Counter = Counter()
+    # per file-edge A->B, the named things A takes from B: {name: kind}
+    refs: dict[tuple[str, str], dict[str, str]] = defaultdict(dict)
     unresolved = 0
     for e in edges:
         # edge['source_file'] is the importer file directly (reliable)
@@ -89,17 +100,31 @@ def build_file_graph(repo_root: Path, exts: set[str] | None = None):
             continue  # e.g. import of a test file we excluded
         if a == b:
             continue
-        weights[(rel(a), rel(b))] += e.get("weight", 1.0)
+        ra, rb = rel(a), rel(b)
+        weights[(ra, rb)] += e.get("weight", 1.0)
+        kind = KIND.get(e.get("relation"))
+        name = node_label.get(e["target"]) if kind else None
+        if name:
+            cur = refs[(ra, rb)].get(name)
+            if cur is None or KIND_RANK[kind] < KIND_RANK[cur]:
+                refs[(ra, rb)][name] = kind
+
+    def ref_list(named: dict[str, str]) -> list[dict[str, str]]:
+        # calls first, then uses, then imports; alphabetical within a kind
+        items = sorted(named.items(), key=lambda kv: (KIND_RANK[kv[1]], kv[0]))
+        return [{"name": n, "kind": k} for n, k in items]
 
     file_list = sorted(rel(str(f)) for f in files)
     return {
         "files": file_list,
         "edges": {f"{a}|{b}": w for (a, b), w in weights.items()},  # directed A->B
+        "references": {f"{a}|{b}": ref_list(d) for (a, b), d in refs.items()},
         "_diag": {
             "n_files": len(file_list),
             "n_symbol_nodes": len(nodes),
             "n_symbol_edges": len(edges),
             "n_file_edges": len(weights),
+            "n_edges_with_refs": len(refs),
             "unresolved_endpoints": unresolved,
             "relations": dict(Counter(e.get("relation") for e in edges)),
         },

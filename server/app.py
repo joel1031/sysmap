@@ -62,7 +62,7 @@ def _run_pipeline(root: Path, exts: set[str] | None) -> dict:
         names = name_groups(m["groups"], root.name)
     except Exception:
         names = None
-    return build_map(root.name, m["groups"], sg, names)
+    return build_map(root.name, m["groups"], sg, names, g["references"])
 
 
 @app.get("/map")
