@@ -37,8 +37,16 @@ _Avoid_: edge, link, relation
 **Crossing**:
 A single file→file edge whose two files sit in different subsystems. A dependency is backed by one or
 more crossings; the count of crossings is the dependency's weight. Crossings are the drill-in list — the
-concrete places two subsystems touch.
+concrete places two subsystems touch. Each crossing is itself backed by one or more references — the
+specific things the source file takes from the target.
 _Avoid_: bridge, bridge file (a bridge is a cut edge in graph theory — a different concept), connector, seam, port
+
+**Reference**:
+One file's use of a named thing defined in another file — a function it calls, a value it imports, a
+type or constant it uses. References are the finest grain the tool reads: a crossing is one file
+reaching into another, and its references are the specific things the source file takes from the
+target. Each is one of three kinds — a **call**, an **import**, or a plain **use**.
+_Avoid_: symbol, usage, dependency (that is the subsystem-level term), edge
 
 **Major Dependency**:
 A dependency that carries a meaningful share of the crossings leaving its source subsystem. Majors are

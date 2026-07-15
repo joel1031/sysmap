@@ -59,7 +59,8 @@ Top to bottom:
    motion — the header and crossings below are local and appear immediately, so
    the panel is never blank.
 3. **What crosses** — the crossings, as rows of the two files that touch, each
-   annotated with the symbols that actually cross and their relation
+   annotated with the references that cross — the things the source file takes
+   from the target and how
    (e.g. `auth.ts → session.ts — calls createSession, imports verifyToken`).
    This is the concrete "where they touch." Rows look interactive; clicking a
    row to reveal the highlighted code is a **depth-phase** feature and is inert
@@ -101,12 +102,13 @@ depth), and any metric such as self-containment.
   endpoint streams text deltas to the page, which types them into the sentence
   area. First open streams live; the completed text is saved to cache.
 - **Input (the user message):** the two subsystems' names and descriptions, and
-  the symbols that cross with their relation types, per direction. Not raw code.
+  the references that cross with their kinds (call / import / use), per
+  direction. Not raw code.
 - **Failure** (no credits / offline): the sentence area shows a plain "couldn't
   generate a summary" line; the rest of the panel still works.
 - **Cost shape:** one build-time call (naming) + at most one per connection
   actually opened, cached thereafter. A fully-explored centerpiece-api is
-  ~21 calls *ever* for a commit; each connection call is a handful of symbol
+  ~21 calls *ever* for a commit; each connection call is a handful of reference
   names, not code.
 
 ## The house voice (shared system prompt)
@@ -124,35 +126,35 @@ The shared foundation is three parts:
    inventing purpose beyond the evidence.
 
 Each specific call adds only its **task** and its **output shape**. For the
-connection sentence: read the crossing symbols as evidence of how the two
+connection sentence: read the crossing references as evidence of how the two
 subsystems couple, and state the working relationship they add up to, in one
 sentence, staying strictly within the evidence.
 
 Proposed sentence stance (to confirm at spec review): **abstracted to purpose**
-— say what the borrowed symbols are *for* rather than listing identifiers,
-naming a specific symbol only when one clearly dominates. The exact symbol names
-still live one layer down in the crossing rows, so nothing is lost. The actual
-house-voice text is drafted during implementation and reviewed before it ships.
+— say what the borrowed references are *for* rather than listing identifiers,
+naming a specific one only when it clearly dominates. The exact names still live
+one layer down in the crossing rows, so nothing is lost. The actual house-voice
+text is drafted during implementation and reviewed before it ships.
 
 ## The engine foundation
 
 The model input and the crossing-row annotations both need the per-crossing
-symbols the pipeline currently throws away. `engine/extract.py` collapses
-graphify's symbol-level edges to a file→file count; `subsystem_graph.py` carries
-only the file pairs; `map.py` emits `{from, to}` per crossing. This design threads
-the symbol data through so each crossing carries the symbols that cross and their
-relation.
+references the pipeline currently throws away. `engine/extract.py` collapses
+graphify's finer edges to a file→file count; `subsystem_graph.py` carries only
+the file pairs; `map.py` emits `{from, to}` per crossing. This design threads
+the reference data through so each crossing carries the references that cross
+and their kind.
 
-Spike (done, on SpendWell): graphify symbol nodes carry a clean, correctly-cased
-name in their `label` field (`authMiddleware`, `plaidRoutes`, `classify()`),
-and `imports` / `calls` / `references` edges point from the importing file to
-the exact symbol node, whose own `source_file` says which subsystem it belongs
-to. So for a crossing A→B we can collect the labels of B's symbols that A
-imports/calls/references. The data is usable; we build on it with no fallback.
+Spike (done, on SpendWell): graphify's finer-grained nodes carry a clean,
+correctly-cased name in their `label` field (`authMiddleware`, `plaidRoutes`,
+`classify()`), and `imports` / `calls` / `references` edges point from the
+importing file to the exact node, whose own `source_file` says which subsystem
+it belongs to. So for a crossing A→B we can collect the names of B's things that
+A calls, imports, or uses. The data is usable; we build on it with no fallback.
 
 ## Phasing
 
-1. **Engine symbols.** Thread per-crossing symbols + relations through
+1. **Engine references.** Thread per-crossing references + kinds through
    `extract.py → subsystem_graph.py → map.py` into the map document and the
    page's types. Verify by re-mapping a repo and inspecting the document.
 2. **House voice + connection endpoint.** Write the shared system prompt; apply
@@ -174,6 +176,6 @@ the in-panel drill navigation.
 
 ## Open questions
 
-- Confirm the sentence stance (abstracted-to-purpose vs. always naming symbols).
+- Confirm the sentence stance (abstracted-to-purpose vs. always naming references).
 - The exact house-voice prompt text — drafted in implementation, reviewed before
   it ships.
