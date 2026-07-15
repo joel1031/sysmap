@@ -77,11 +77,17 @@ function buildEdges(
               reverse: d.source !== drawn.source,
             }))
         : [];
+      // At rest every line recedes equally. Once something's picked, the
+      // lines touching it come forward and the rest fall further back — so
+      // the shape you're tracing lifts out of the tangle.
+      const className =
+        sel === null ? undefined : active ? 'is-focus' : 'is-dim';
       return {
         id: c.id,
         source: drawn.source,
         target: drawn.target,
         type: 'connection',
+        className,
         data: { flows },
       };
     });
@@ -180,14 +186,21 @@ export function MapView({ doc, theme }: { doc: MapDocument; theme: 'dark' | 'lig
         <Controls showInteractive={false} />
         {sel?.kind === 'box' &&
           (() => {
-            // The description lives quietly in a corner, not on the click
-            // card — read it if you want it, ignore it if you're tracing.
+            // Everything a picked box has to say lives quietly in this corner:
+            // no card floats over the map, so the boxes and lines you're
+            // tracing stay uncovered.
             const s = doc.subsystems.find((x) => x.id === sel.id);
-            return s?.description ? (
+            if (!s) return null;
+            return (
               <Panel position="top-left" className="description-strip">
-                <strong>{s.name ?? 'unnamed subsystem'}</strong> — {s.description}
+                <strong>{s.name ?? 'unnamed subsystem'}</strong>
+                {s.description ? ` — ${s.description}` : ''}
+                <div className="fact">
+                  {s.files.length} file{s.files.length === 1 ? '' : 's'}
+                  {s.island ? ' · no connections — fully self-contained' : ''}
+                </div>
               </Panel>
-            ) : null;
+            );
           })()}
         {doc.tray.n_files > 0 && (
           <Panel position="bottom-right">
@@ -202,7 +215,7 @@ export function MapView({ doc, theme }: { doc: MapDocument; theme: 'dark' | 'lig
           </Panel>
         )}
       </ReactFlow>
-      {sel && <DetailCard doc={doc} sel={sel} nodes={nodes} />}
+      {sel?.kind === 'connection' && <DetailCard doc={doc} sel={sel} nodes={nodes} />}
     </>
   );
 }

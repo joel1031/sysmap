@@ -82,11 +82,24 @@ main {
   pointer-events: none;
 }
 
-/* Resting connections: uniform faint tracks. Color and width live here so
-   the theme toggle reaches them. */
+/* Resting connections: thin, faint tracks that sit behind the boxes so the
+   map reads as a shape first, not a web of wires. Color and width live here
+   so the theme toggle reaches them. */
 .react-flow__edge-path {
   stroke: var(--track);
-  stroke-width: 2;
+  stroke-width: 1.6;
+  opacity: 0.5;
+  transition: opacity 0.15s ease, stroke-width 0.15s ease;
+}
+
+/* Something's picked: its lines come forward, everything else falls back. */
+.react-flow__edge.is-focus .react-flow__edge-path {
+  opacity: 1;
+  stroke-width: 2.4;
+}
+
+.react-flow__edge.is-dim .react-flow__edge-path {
+  opacity: 0.1;
 }
 
 /* An active connection's moving pulses — one layer per direction, drifting
@@ -167,6 +180,13 @@ main {
 
 .description-strip strong {
   color: var(--text);
+}
+
+/* The plain facts under the description — quieter than the sentence itself. */
+.description-strip .fact {
+  margin-top: 5px;
+  font-size: 11.5px;
+  opacity: 0.75;
 }
 
 /* The noise chip — a quiet pill in the map's corner. */
