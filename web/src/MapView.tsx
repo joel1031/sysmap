@@ -16,7 +16,6 @@ import { SubsystemBox } from './SubsystemBox';
 import { GhostBox } from './GhostBox';
 import { ConnectionEdge } from './ConnectionEdge';
 import type { Flow } from './ConnectionEdge';
-import { DetailCard } from './DetailCard';
 
 // What's picked right now: a box, a connection, or nothing. Picking a box
 // animates every connection touching it, in each dependency's true
@@ -122,11 +121,20 @@ function buildGhosts(doc: MapDocument, pos: Positions): Node[] {
   });
 }
 
-export function MapView({ doc, theme }: { doc: MapDocument; theme: 'dark' | 'light' }) {
+export function MapView({
+  doc,
+  theme,
+  sel,
+  onSelect,
+}: {
+  doc: MapDocument;
+  theme: 'dark' | 'light';
+  sel: Selection;
+  onSelect: (s: Selection) => void;
+}) {
   const [nodes, setNodes] = useState<Node[]>([]);
   const [ghosts, setGhosts] = useState<Node[]>([]);
   const [showGhosts, setShowGhosts] = useState(false);
-  const [sel, setSel] = useState<Selection>(null);
   const { fitView } = useReactFlow();
 
   const colorOf = useMemo(() => {
@@ -135,18 +143,6 @@ export function MapView({ doc, theme }: { doc: MapDocument; theme: 'dark' | 'lig
   }, [doc]);
 
   const edges = useMemo(() => buildEdges(doc, sel, colorOf), [doc, sel, colorOf]);
-
-  useEffect(() => {
-    setSel(null);
-  }, [doc]);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setSel(null);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -175,33 +171,15 @@ export function MapView({ doc, theme }: { doc: MapDocument; theme: 'dark' | 'lig
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         onNodesChange={(changes) => setNodes((ns) => applyNodeChanges(changes, ns))}
-        onNodeClick={(_, n) => setSel({ kind: 'box', id: n.id })}
-        onEdgeClick={(_, e) => setSel({ kind: 'connection', id: e.id })}
-        onPaneClick={() => setSel(null)}
+        onNodeClick={(_, n) => onSelect({ kind: 'box', id: n.id })}
+        onEdgeClick={(_, e) => onSelect({ kind: 'connection', id: e.id })}
+        onPaneClick={() => onSelect(null)}
         proOptions={{ hideAttribution: true }}
         minZoom={0.2}
         colorMode={theme}
       >
         <Background gap={24} color={theme === 'dark' ? '#1a1f2b' : '#dde2ea'} />
         <Controls showInteractive={false} />
-        {sel?.kind === 'box' &&
-          (() => {
-            // Everything a picked box has to say lives quietly in this corner:
-            // no card floats over the map, so the boxes and lines you're
-            // tracing stay uncovered.
-            const s = doc.subsystems.find((x) => x.id === sel.id);
-            if (!s) return null;
-            return (
-              <Panel position="top-left" className="description-strip">
-                <strong>{s.name ?? 'unnamed subsystem'}</strong>
-                {s.description ? ` — ${s.description}` : ''}
-                <div className="fact">
-                  {s.files.length} file{s.files.length === 1 ? '' : 's'}
-                  {s.island ? ' · no connections — fully self-contained' : ''}
-                </div>
-              </Panel>
-            );
-          })()}
         {doc.tray.n_files > 0 && (
           <Panel position="bottom-right">
             <button
@@ -215,7 +193,6 @@ export function MapView({ doc, theme }: { doc: MapDocument; theme: 'dark' | 'lig
           </Panel>
         )}
       </ReactFlow>
-      {sel?.kind === 'connection' && <DetailCard doc={doc} sel={sel} nodes={nodes} />}
     </>
   );
 }

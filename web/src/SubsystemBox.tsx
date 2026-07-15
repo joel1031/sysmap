@@ -13,7 +13,7 @@ export interface BoxData {
 
 // The naming step picks icons by their kebab-case Lucide names; the package
 // exports them keyed in PascalCase. Unknown names fall back to no icon.
-function iconFor(name: string | null) {
+export function iconFor(name: string | null) {
   if (!name) return undefined;
   const pascal = name
     .split('-')

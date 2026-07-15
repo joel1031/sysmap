@@ -3,6 +3,8 @@ import { ReactFlowProvider } from '@xyflow/react';
 import { fetchMap } from './api';
 import type { MapDocument } from './types';
 import { MapView } from './MapView';
+import type { Selection } from './MapView';
+import { DetailPanel } from './DetailPanel';
 import './App.css';
 
 // The `map` command resolves the repo (walking up to .git from wherever you
@@ -16,10 +18,30 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [sel, setSel] = useState<Selection>(null);
+  const [panelOpen, setPanelOpen] = useState(true);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
+
+  // Selecting anything opens the panel; a fresh map clears the selection.
+  const select = useCallback((s: Selection) => {
+    setSel(s);
+    if (s) setPanelOpen(true);
+  }, []);
+
+  useEffect(() => {
+    setSel(null);
+  }, [doc]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSel(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   const load = useCallback(async (refresh = false) => {
     if (!REPO) return;
@@ -72,9 +94,29 @@ export default function App() {
         {error && <div className="error">{error}</div>}
         {busy && !doc && <div className="empty">Running the pipeline…</div>}
         {doc && (
-          <ReactFlowProvider>
-            <MapView doc={doc} theme={theme} />
-          </ReactFlowProvider>
+          <div className="workspace">
+            <div className="map-area">
+              <ReactFlowProvider>
+                <MapView doc={doc} theme={theme} sel={sel} onSelect={select} />
+              </ReactFlowProvider>
+            </div>
+            {panelOpen ? (
+              <DetailPanel
+                doc={doc}
+                sel={sel}
+                onSelect={select}
+                onClose={() => setPanelOpen(false)}
+              />
+            ) : (
+              <button
+                className="panel-reopen"
+                onClick={() => setPanelOpen(true)}
+                title="open the detail panel"
+              >
+                ‹
+              </button>
+            )}
+          </div>
         )}
       </main>
     </div>

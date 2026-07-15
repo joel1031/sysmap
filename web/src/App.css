@@ -119,74 +119,203 @@ main {
   }
 }
 
-/* The anchored card — beside the thing you clicked. */
-.detail-card {
-  position: fixed;
-  z-index: 20;
-  width: max-content;
-  max-width: 360px;
-  max-height: 60vh;
-  overflow-y: auto;
+/* The workspace: the map and the detail panel, side by side. */
+.workspace {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+
+.map-area {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+}
+
+/* The detail panel — the app's one surface for a selection. Permanent, docked
+   right, pushing the map narrower rather than covering it. */
+.detail-panel {
+  position: relative;
+  width: 360px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--border);
   background: var(--surface);
-  border: 1px solid var(--btn-border);
-  border-radius: 10px;
-  padding: 12px 14px;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+  overflow-y: auto;
   font-size: 12.5px;
 }
 
-.detail-card h4 {
-  margin: 0 0 6px;
-  font-size: 13px;
+/* On a narrow screen it stops pushing and floats over the map's right edge. */
+@media (max-width: 720px) {
+  .detail-panel {
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: min(360px, 86vw);
+    z-index: 10;
+    box-shadow: -8px 0 28px rgba(0, 0, 0, 0.35);
+  }
 }
 
-.detail-card p {
-  margin: 0 0 8px;
+.panel-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font: inherit;
+  font-size: 18px;
+  line-height: 1;
+  padding: 2px 6px;
+  border: none;
+  background: none;
   color: var(--text-dim);
-  line-height: 1.45;
-  max-width: 300px;
+  cursor: pointer;
 }
 
-.detail-card .fact {
-  color: var(--text-dim);
-  padding: 1.5px 0;
-}
-
-.detail-card .direction + .direction {
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px solid var(--border);
-}
-
-.detail-card .crossings {
-  margin-top: 6px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 10.5px;
-  color: var(--text-dim);
-  line-height: 1.6;
-}
-
-/* The selected box's one-sentence description, out of the way in a corner. */
-.description-strip {
-  max-width: 420px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 8px 12px;
-  font-size: 12px;
-  color: var(--text-dim);
-  line-height: 1.45;
-}
-
-.description-strip strong {
+.panel-close:hover {
   color: var(--text);
 }
 
-/* The plain facts under the description — quieter than the sentence itself. */
-.description-strip .fact {
-  margin-top: 5px;
+/* The slim tab that brings the panel back after it's closed. */
+.panel-reopen {
+  width: 22px;
+  flex-shrink: 0;
+  border: none;
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.panel-reopen:hover {
+  color: var(--text);
+}
+
+.panel-empty {
+  padding: 26px 18px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.panel-body {
+  padding: 16px 16px 28px;
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 26px 10px 0;
+  font-size: 15px;
+  line-height: 1.3;
+}
+
+.panel-conn-head {
+  font-size: 14px;
+}
+
+.panel-desc {
+  margin: 0 0 10px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.panel-fact {
+  color: var(--text-dim);
   font-size: 11.5px;
-  opacity: 0.75;
+  opacity: 0.8;
+}
+
+/* The streamed sentence — the digestible headline for a connection. */
+.panel-sentence {
+  margin: 4px 0 6px;
+  font-size: 13px;
+  line-height: 1.55;
+  min-height: 1.5em;
+}
+
+.panel-dim,
+.panel-fail {
+  color: var(--text-dim);
+}
+
+.panel-fail {
+  font-style: italic;
+}
+
+.cursor {
+  display: inline-block;
+  width: 6px;
+  height: 1em;
+  margin-left: 1px;
+  background: var(--text-dim);
+  vertical-align: text-bottom;
+  animation: blink 1s step-start infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.panel-section {
+  margin-top: 16px;
+}
+
+.panel-section-label {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  margin-bottom: 7px;
+}
+
+.relation-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.relation {
+  font: inherit;
+  font-size: 12px;
+  padding: 3px 10px;
+  border: 1px solid var(--btn-border);
+  border-radius: 999px;
+  background: var(--btn-bg);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.relation:hover {
+  border-color: #6c8cff;
+}
+
+.crossing-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.crossing-row {
+  padding: 6px 0;
+  border-top: 1px solid var(--border);
+}
+
+.crossing-row .files {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: var(--text);
+}
+
+.crossing-row .refs {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-dim);
+  font-size: 11px;
+  line-height: 1.4;
 }
 
 /* The noise chip — a quiet pill in the map's corner. */
