@@ -44,6 +44,7 @@ def _ask(prompt: str, n: int) -> dict[int, "GroupName"]:
     with client.messages.stream(
         model=MODEL,
         max_tokens=_budget(n),
+        temperature=0,  # near-greedy: same groups tend to get the same names
         system=HOUSE_VOICE,
         messages=[{"role": "user", "content": prompt}],
         output_format=Naming,
