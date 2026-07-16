@@ -181,6 +181,27 @@ def get_descend(repo: str, path: str, exts: str | None = None,
     return doc
 
 
+@app.get("/file", response_class=PlainTextResponse)
+def get_file(repo: str, path: str, exts: str | None = None):
+    """One source file, whole. The page windows it around the line it wants and
+    keeps it, so reading several references in the same file costs one request.
+
+    A path is served only if it is one of the files we actually parsed. That
+    list is the tightest allowlist available and needs no reasoning about where
+    a path resolves to: `../../../.ssh/id_rsa` is refused because it simply
+    isn't in it. This server is local, which is not a reason to leave it open.
+    """
+    root = Path(repo).expanduser().resolve()
+    head = _head(root)
+    graph = _load(_cache_file(root, exts, ".graph"), head, "file graph")["graph"]
+    if path not in set(graph["files"]):
+        raise HTTPException(404, f"not a file in this map: {path}")
+    try:
+        return (root / path).read_text(errors="ignore")
+    except OSError as exc:
+        raise HTTPException(404, f"can't read {path}: {exc}")
+
+
 @app.get("/connection")
 def get_connection(repo: str, id: str, exts: str | None = None,
                    refresh: bool = False):
