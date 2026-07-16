@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Background,
   Controls,
@@ -177,6 +177,25 @@ export function MapView({
   const [ghosts, setGhosts] = useState<Node[]>([]);
   const [showGhosts, setShowGhosts] = useState(false);
   const { fitView } = useReactFlow();
+  const box = useRef<HTMLDivElement>(null);
+  // Whether the view is the reader's doing. Until they pan or zoom, the map is
+  // ours to keep framed; once they've chosen a view, resizing must not throw it
+  // away. A ref, not state — the observer below shouldn't be rebuilt for it.
+  const touched = useRef(false);
+
+  // Widening the panel takes the map's space. Without this the map keeps its
+  // zoom and simply gets cut off at the edge, which reads as the map being
+  // clipped rather than making room. Refitting on every resize frame follows
+  // the drag instead.
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      if (!touched.current) fitView({ padding: 0.15, duration: 0 });
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [fitView]);
 
   const colorOf = useMemo(() => {
     const m = new Map(doc.subsystems.map((s, i) => [s.id, PALETTE[i % PALETTE.length]]));
@@ -195,6 +214,7 @@ export function MapView({
       setNodes(buildNodes(doc, pos).concat(buildExits(doc, pos)));
       setGhosts(buildGhosts(doc, pos));
       setShowGhosts(false);
+      touched.current = false; // a new altitude is a new picture to frame
       requestAnimationFrame(() => fitView({ padding: 0.15 }));
     });
     return () => {
@@ -208,12 +228,17 @@ export function MapView({
   );
 
   return (
-    <>
+    <div className="flow-fill" ref={box}>
       <ReactFlow
         nodes={allNodes}
         edges={edges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
+        // A real gesture carries an event; our own fitView calls don't. So this
+        // fires only when the reader moves the view themselves.
+        onMoveStart={(e) => {
+          if (e) touched.current = true;
+        }}
         onNodesChange={(changes) => setNodes((ns) => applyNodeChanges(changes, ns))}
         onNodeClick={(_, n) => {
           if (n.type === 'exit') {
@@ -241,7 +266,15 @@ export function MapView({
         colorMode={theme}
       >
         <Background gap={24} color={theme === 'dark' ? '#1a1f2b' : '#dde2ea'} />
-        <Controls showInteractive={false} />
+        {/* Fit-view is also how you hand the framing back: after this, the map
+            keeps itself framed again as the panel moves. */}
+        <Controls
+          showInteractive={false}
+          onFitView={() => {
+            touched.current = false;
+            fitView({ padding: 0.15, duration: 300 });
+          }}
+        />
         {doc.tray.n_files > 0 && (
           <Panel position="bottom-right">
             <button
@@ -255,6 +288,6 @@ export function MapView({
           </Panel>
         )}
       </ReactFlow>
-    </>
+    </div>
   );
 }
