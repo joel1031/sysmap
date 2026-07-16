@@ -197,11 +197,36 @@ either page phase disappoints, the other still stands.
   match, and the edge under it goes too. Two of SpendWell's 127 file edges were
   fictional. Out of this spec's scope, agreed separately.
 
+## What using it added
+
+Three things the spec didn't call for, each found by driving the built thing:
+
+- **A waiting surface over the map.** A descent takes seconds, and it was
+  spending them showing the altitude you just left while the trail already
+  claimed the new one — the page asserting a place it hadn't loaded. The old map
+  now dims behind a surface that says what the wait is for. The same surface
+  covers the first build and a re-map.
+- **The panel's width is the reader's.** 360px was sized for a sentence and a
+  list of crossings; the code leaf put code in there. The divider is draggable,
+  clamped so the panel can't drop below a line of code or crowd out the map it
+  exists to explain, and the width is remembered.
+- **The map refits as the panel takes its space.** It was keeping its zoom and
+  getting clipped at the edge, which reads as the map being cut off rather than
+  making room. It now refits per frame — but only while the framing is still
+  ours. Once the reader pans or zooms they have chosen a view, and overruling it
+  on the next drag would be the tool overruling them.
+
+## Status
+
+Built, driven, and accepted (2026-07-16). **Layer 1 is complete**: the map goes
+across at one altitude, down through a subsystem to its files, and into a
+connection as far as the code on both ends of it.
+
 ## Unresolved
 
-- The 8-file floor is a guess; tune by eye.
+- The 8-file floor is still a guess. It behaves on SpendWell, which is small —
+  it wants judging against a repo with subsystems big enough to descend two or
+  three times.
 - Subsystem naming still varies between runs even at temperature 0 — one
-  descent named a box "User Profile" and the next "User Settings". The next
-  lever is seeding, not sampling.
-- Phases 4 and 5 are built and compile, but the page has not been driven
-  end-to-end yet.
+  descent named a box "User Profile" and the next "User Settings". Sampling is
+  not the lever; seeding the grouping is.
