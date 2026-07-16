@@ -73,13 +73,27 @@ def _render_groups(groups: list[list[str]]) -> str:
     return "\n".join(lines)
 
 
-def name_groups(groups: list[list[str]], repo_name: str) -> dict[int, GroupName]:
-    """Return {index: GroupName}. Requires ANTHROPIC_API_KEY (or an ant profile)."""
+def name_groups(groups: list[list[str]], repo_name: str,
+                parent: str | None = None) -> dict[int, GroupName]:
+    """Return {index: GroupName}. Requires ANTHROPIC_API_KEY (or an ant profile).
+
+    `parent` names the subsystem these groups were found *inside*, when this is
+    a descent. It steers the names toward roles within that subsystem ("inside
+    Payments, this piece is Refunds") instead of names that restate the parent.
+    """
+    where = (f"inside the '{parent}' subsystem of the '{repo_name}' codebase"
+             if parent else f"in the '{repo_name}' codebase")
+    scope = (
+        f"Name each group by the part it plays WITHIN {parent}. Assume the reader "
+        f"already knows they are looking inside {parent}, so do not restate it — "
+        f"'Refunds', not '{parent} Refunds'.\n\n"
+        if parent else
+        "Name each group by its apparent responsibility in the system.\n\n"
+    )
     prompt = (
-        f"These are file clusters found in the '{repo_name}' codebase by a "
-        f"community-detection algorithm run on its import/call graph. Each cluster "
-        f"is a candidate subsystem. Name each group by its apparent responsibility "
-        f"in the system.\n\n"
+        f"These are file clusters found {where} by a community-detection "
+        f"algorithm run on its import/call graph. Each cluster is a candidate "
+        f"subsystem. {scope}"
         f"Rules:\n"
         f"- name: 2-4 words, Title Case (e.g. 'Payments & Penalties', 'Bank Sync').\n"
         f"- description: one sentence on what this subsystem does.\n"

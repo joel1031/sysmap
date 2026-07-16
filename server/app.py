@@ -58,12 +58,26 @@ def _head(root: Path) -> str | None:
     return r.stdout.strip() if r.returncode == 0 else None
 
 
-def _cache_file(root: Path, exts: str | None) -> Path:
+def _cache_file(root: Path, exts: str | None, kind: str = "") -> Path:
+    """The map cache, and its two siblings.
+
+    The file graph and the descents live beside the map rather than inside it:
+    both the sentences and the descents are written back one entry at a time,
+    and the graph is far the biggest of the four. Keeping them apart means
+    caching one sentence doesn't rewrite a repo's whole edge list.
+    """
     key = sha1("|".join([str(root), exts or ""]).encode()).hexdigest()[:8]
-    return CACHE / f"{root.name}-{key}.json"
+    return CACHE / f"{root.name}-{key}{kind}.json"
 
 
-def _run_pipeline(root: Path, exts: set[str] | None) -> dict:
+def _run_pipeline(root: Path, exts: set[str] | None) -> tuple[dict, dict]:
+    """The map document, and the file graph it was built from.
+
+    The graph is kept because the map document doesn't carry a subsystem's
+    internal wiring — only the crossings between subsystems — and a descent
+    needs exactly that, plus the edges leaving the subsystem for its exits.
+    Caching it means descending never re-parses the repo.
+    """
     g = build_file_graph(root, exts=exts)
     sig = build_signals(g["files"], g["edges"], root)
     m = leiden(g["files"], g["edges"], sig["combined"])
@@ -73,7 +87,7 @@ def _run_pipeline(root: Path, exts: set[str] | None) -> dict:
         names = name_groups(m["groups"], root.name)
     except Exception:
         names = None
-    return build_map(root.name, m["groups"], sg, names, g["references"])
+    return build_map(root.name, m["groups"], sg, names, g["references"]), g
 
 
 @app.get("/map")
@@ -91,8 +105,79 @@ def get_map(repo: str, exts: str | None = None, refresh: bool = False):
         if cached["head"] == head and cached.get("schema") == SCHEMA:
             return cached["map"]
 
-    doc = _run_pipeline(root, ext_set)
+    doc, graph = _run_pipeline(root, ext_set)
     cache_file.write_text(json.dumps({"head": head, "schema": SCHEMA, "map": doc}))
+    _cache_file(root, exts, ".graph").write_text(
+        json.dumps({"head": head, "schema": SCHEMA, "graph": graph}))
+    _cache_file(root, exts, ".descents").unlink(missing_ok=True)  # a new map, new insides
+    return doc
+
+
+def _load(path: Path, head: str | None, what: str) -> dict:
+    if not path.exists():
+        raise HTTPException(404, f"{what} not built yet — re-map this repo")
+    d = json.loads(path.read_text())
+    if d.get("schema") != SCHEMA or (head and d.get("head") != head):
+        raise HTTPException(409, f"{what} is stale — re-map this repo")
+    return d
+
+
+@app.get("/descend")
+def get_descend(repo: str, path: str, exts: str | None = None,
+                refresh: bool = False):
+    """The inside of one subsystem — its files re-grouped into their own map.
+
+    `path` is the altitude trail from the top map down, ids comma-separated:
+    the last one is what you're opening, the ones before it say where you're
+    standing. A subsystem is only addressable by the way you got to it, because
+    its exits are described relative to that: from inside Onboarding Flow, the
+    useful thing to say about a wire leaving it is that it lands in
+    Authentication next door, not that it lands somewhere in Frontend Core.
+
+    Each step down is computed the first time it's opened and cached from then
+    on, so nobody pays for the insides of boxes they never look at.
+    """
+    root = Path(repo).expanduser().resolve()
+    ids = [p for p in path.split(",") if p]
+    if not ids:
+        raise HTTPException(400, "path is empty")
+    head = _head(root)
+    doc = _load(_cache_file(root, exts), head, "map")["map"]
+
+    dfile = _cache_file(root, exts, ".descents")
+    descents = {}
+    if dfile.exists():
+        d = json.loads(dfile.read_text())
+        if d.get("schema") == SCHEMA and d.get("head") == head:
+            descents = d.get("descents", {})
+
+    graph = None
+    # file -> the box that holds it. Each altitude refines the one above, so by
+    # the time we descend, a file's owner is the nearest box that isn't the one
+    # being opened: a sibling where there is one, something higher up otherwise.
+    owner = {f: s["id"] for s in doc["subsystems"] for f in s["files"]}
+    labels = {s["id"]: s for s in doc["subsystems"]}
+
+    for depth, sid in enumerate(ids):
+        sub = next((s for s in doc["subsystems"] if s["id"] == sid), None)
+        if sub is None:
+            raise HTTPException(404, f"no such subsystem: {sid}")
+        key = ",".join(ids[:depth + 1])
+        last = depth == len(ids) - 1
+        if key in descents and not (refresh and last):
+            doc = descents[key]
+        else:
+            if graph is None:
+                graph = _load(_cache_file(root, exts, ".graph"),
+                              head, "file graph")["graph"]
+            from engine.descend import descend
+            doc = descend(root, graph, sub["files"], sub, owner, labels, root.name)
+            descents[key] = doc
+            dfile.write_text(json.dumps(
+                {"head": head, "schema": SCHEMA, "descents": descents}))
+        if not last:
+            owner.update({f: s["id"] for s in doc["subsystems"] for f in s["files"]})
+            labels.update({s["id"]: s for s in doc["subsystems"]})
     return doc
 
 
