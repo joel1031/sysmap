@@ -282,18 +282,60 @@ main {
 }
 
 /* The detail panel — the app's one surface for a selection. Permanent, docked
-   right, pushing the map narrower rather than covering it. */
+   right, pushing the map narrower rather than covering it. The shell doesn't
+   scroll; .panel-scroll inside it does, so the grip can't scroll away. */
 .detail-panel {
   position: relative;
-  width: 360px;
+  display: flex;
+  flex-direction: column;
+  width: var(--panel-w, 360px);
   flex-shrink: 0;
   border-left: 1px solid var(--border);
   background: var(--surface);
-  overflow-y: auto;
   font-size: 12.5px;
 }
 
-/* On a narrow screen it stops pushing and floats over the map's right edge. */
+.panel-scroll {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* The divider, grabbable. It sits astride the border so there's something to
+   catch without stealing pixels from either side. */
+.panel-grip {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -3px;
+  width: 7px;
+  z-index: 3;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.panel-grip::after {
+  content: '';
+  position: absolute;
+  inset: 0 3px;
+  background: #6c8cff;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.panel-grip:hover::after,
+body.resizing .panel-grip::after {
+  opacity: 1;
+}
+
+/* While dragging, the whole page follows the divider — no text gets selected
+   on the way past, and the cursor doesn't flicker over what it crosses. */
+body.resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+/* On a narrow screen it stops pushing and floats over the map's right edge —
+   at a fixed width, since there's no room to trade and nothing to drag. */
 @media (max-width: 720px) {
   .detail-panel {
     position: absolute;
@@ -301,6 +343,10 @@ main {
     width: min(360px, 86vw);
     z-index: 10;
     box-shadow: -8px 0 28px rgba(0, 0, 0, 0.35);
+  }
+
+  .panel-grip {
+    display: none;
   }
 }
 

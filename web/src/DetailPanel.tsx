@@ -13,6 +13,39 @@ const REPO = new URLSearchParams(window.location.search).get('repo') ?? '';
 const VERB: Record<string, string> = { call: 'calls', import: 'imports', use: 'uses' };
 const base = (p: string) => p.split('/').pop() ?? p;
 
+// How wide the panel may get: never so narrow it can't hold a line of code,
+// never so wide the map it's explaining is squeezed out of existence.
+const MIN_W = 300;
+const MAP_KEEP = 320;
+const DEFAULT_W = 360;
+const STORE = 'panel-width';
+
+// The width is the reader's, and it survives the session: someone who widens
+// the panel to read code wants it that way next time too, and re-dragging on
+// every launch is exactly the mechanical work this tool is supposed to absorb.
+function useWidth() {
+  const [want, setWant] = useState(() => {
+    const saved = Number(localStorage.getItem(STORE));
+    return saved >= MIN_W ? saved : DEFAULT_W;
+  });
+  const [vw, setVw] = useState(() => window.innerWidth);
+
+  useEffect(() => {
+    localStorage.setItem(STORE, String(want));
+  }, [want]);
+
+  useEffect(() => {
+    const onResize = () => setVw(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  // A narrow window clamps what's shown without forgetting what was asked for,
+  // so widening the window again gives the width back.
+  const width = Math.max(MIN_W, Math.min(want, Math.max(MIN_W, vw - MAP_KEEP)));
+  return { width, setWant };
+}
+
 // One reference, opened: where the source file uses it, and where the target
 // defines it. A crossing IS "this file reaches into that one", so both ends
 // together are that relationship made concrete — seeing one leaves you asking
@@ -43,35 +76,63 @@ export function DetailPanel({
   canBack: boolean;
   onClose: () => void;
 }) {
+  const { width, setWant } = useWidth();
+
+  // Drag the divider. Tracking on the window rather than the grip means the
+  // pointer can outrun the element without dropping the drag.
+  const grab = (e: React.PointerEvent) => {
+    e.preventDefault();
+    const move = (ev: PointerEvent) =>
+      setWant(Math.max(MIN_W, Math.min(window.innerWidth - ev.clientX,
+                                       Math.max(MIN_W, window.innerWidth - MAP_KEEP))));
+    const drop = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', drop);
+      document.body.classList.remove('resizing');
+    };
+    document.body.classList.add('resizing');
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', drop);
+  };
+
   return (
-    <aside className="detail-panel">
-      <div className="panel-nav">
-        {canBack ? (
-          <button className="panel-back" onClick={onBack} title="back to the last thing">
-            ‹ Back
+    <aside className="detail-panel" style={{ '--panel-w': `${width}px` } as React.CSSProperties}>
+      <div
+        className="panel-grip"
+        onPointerDown={grab}
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="drag to resize the panel"
+      />
+      <div className="panel-scroll">
+        <div className="panel-nav">
+          {canBack ? (
+            <button className="panel-back" onClick={onBack} title="back to the last thing">
+              ‹ Back
+            </button>
+          ) : (
+            <span />
+          )}
+          <button className="panel-close" onClick={onClose} title="close — focus the map">
+            ×
           </button>
-        ) : (
-          <span />
+        </div>
+        {/* Nothing picked. Inside a subsystem that's still a question with an
+            answer — the subsystem you're standing in. At the top it isn't. */}
+        {sel === null &&
+          (doc.parent ? (
+            <ParentView doc={doc} />
+          ) : (
+            <div className="panel-empty">
+              Select a subsystem or connection to explore its relationships.
+            </div>
+          ))}
+        {sel?.kind === 'box' && (
+          <BoxView doc={doc} id={sel.id} onSelect={onSelect} onDescend={onDescend} />
         )}
-        <button className="panel-close" onClick={onClose} title="close — focus the map">
-          ×
-        </button>
+        {sel?.kind === 'connection' && <ConnectionView doc={doc} id={sel.id} />}
+        {sel?.kind === 'file' && <FileView path={sel.id} />}
       </div>
-      {/* Nothing picked. Inside a subsystem that's still a question with an
-          answer — the subsystem you're standing in. At the top it isn't. */}
-      {sel === null &&
-        (doc.parent ? (
-          <ParentView doc={doc} />
-        ) : (
-          <div className="panel-empty">
-            Select a subsystem or connection to explore its relationships.
-          </div>
-        ))}
-      {sel?.kind === 'box' && (
-        <BoxView doc={doc} id={sel.id} onSelect={onSelect} onDescend={onDescend} />
-      )}
-      {sel?.kind === 'connection' && <ConnectionView doc={doc} id={sel.id} />}
-      {sel?.kind === 'file' && <FileView path={sel.id} />}
     </aside>
   );
 }
