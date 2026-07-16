@@ -18,12 +18,14 @@ import { ExitBox } from './ExitBox';
 import { ConnectionEdge } from './ConnectionEdge';
 import type { Flow } from './ConnectionEdge';
 
-// What's picked right now: a box, a connection, or nothing. Picking a box
-// animates every connection touching it, in each dependency's true
-// direction; picking a connection animates just that one.
+// What's picked right now: a box, a connection, a file out of the tray, or
+// nothing. Picking a box animates every connection touching it, in each
+// dependency's true direction; picking a connection animates just that one.
+// A file's id is its path — it has no box to be.
 export type Selection =
   | { kind: 'box'; id: string }
   | { kind: 'connection'; id: string }
+  | { kind: 'file'; id: string }
   | null;
 
 // Vivid enough to read as outlines on near-black, mid enough for light mode.
@@ -149,7 +151,6 @@ function buildGhosts(doc: MapDocument, pos: Positions): Node[] {
       type: 'ghost',
       position: { x, y },
       draggable: false,
-      selectable: false,
       data: { label, full: f },
     };
     x += w + 10;
@@ -219,6 +220,9 @@ export function MapView({
             // A door out: climb to where that subsystem lives and pick it.
             const { target, depth } = n.data as { target: string; depth: number };
             onExit(depth, target);
+          } else if (n.type === 'ghost') {
+            // An unwired file. Nothing to group, but it's still code you can read.
+            onSelect({ kind: 'file', id: (n.data as { full: string }).full });
           } else if (n.type === 'subsystem') {
             onSelect({ kind: 'box', id: n.id });
           }

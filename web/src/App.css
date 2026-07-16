@@ -460,11 +460,149 @@ main {
 }
 
 .crossing-row .refs {
-  display: block;
-  margin-top: 3px;
-  color: var(--text-dim);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+/* One named thing this file takes from that one. Click it for the code. */
+.ref-chip {
+  font: inherit;
   font-size: 11px;
-  line-height: 1.4;
+  padding: 2px 7px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: var(--btn-bg);
+  color: var(--text-dim);
+  cursor: pointer;
+  line-height: 1.5;
+}
+
+.ref-chip code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--text);
+}
+
+.ref-chip:hover {
+  border-color: var(--btn-border);
+}
+
+.ref-chip.is-open {
+  border-color: #6c8cff;
+  color: var(--text);
+}
+
+/* Both ends of a reference, stacked: where it's used, then where it lives. */
+.ref-code {
+  margin: 7px 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.code {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  overflow: hidden;
+  background: var(--box-base);
+}
+
+.code-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 9px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.code-cap {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+}
+
+.code-path {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10.5px;
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+
+.code-wait {
+  padding: 8px 10px;
+  font-size: 11px;
+}
+
+.code-body {
+  max-height: 340px;
+  overflow: auto;
+}
+
+.code-more {
+  font: inherit;
+  font-size: 10.5px;
+  width: 100%;
+  padding: 5px;
+  border: none;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.code-more:hover {
+  color: var(--text);
+}
+
+/* Shiki writes one variable per theme onto every token; these two rules pick
+   which one wins, off the same data-theme the rest of the page uses. That is
+   the whole reason for Shiki over a regex highlighter — no second palette to
+   maintain by hand. */
+.code .shiki,
+.code .shiki span {
+  background-color: var(--sh-light-bg) !important;
+  color: var(--sh-light);
+}
+
+:root[data-theme='dark'] .code .shiki,
+:root[data-theme='dark'] .code .shiki span {
+  background-color: var(--sh-dark-bg) !important;
+  color: var(--sh-dark);
+}
+
+.code .shiki {
+  margin: 0;
+  padding: 8px 0;
+  font-size: 11px;
+  line-height: 1.55;
+  tab-size: 2;
+}
+
+.code .shiki code {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.code .shiki .line {
+  display: inline-block;
+  min-width: 100%;
+  padding: 0 9px;
+}
+
+/* The line you came here for. */
+.code .shiki .line.marked {
+  background: color-mix(in srgb, #6c8cff 20%, transparent);
+  box-shadow: inset 2px 0 0 #6c8cff;
+}
+
+.panel-file-head {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  overflow-wrap: anywhere;
 }
 
 /* The noise chip — a quiet pill in the map's corner. */

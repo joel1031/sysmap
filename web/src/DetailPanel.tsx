@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import type { Exit, MapDocument, Reference } from './types';
+import type { Crossing, Exit, MapDocument, Reference } from './types';
 import type { Selection } from './MapView';
 import { iconFor } from './SubsystemBox';
+import { CodeView } from './CodeView';
 import { streamConnectionSummary } from './api';
 
 // The app's one detail surface. A permanent right-hand panel that reflects the
@@ -12,15 +13,17 @@ const REPO = new URLSearchParams(window.location.search).get('repo') ?? '';
 const VERB: Record<string, string> = { call: 'calls', import: 'imports', use: 'uses' };
 const base = (p: string) => p.split('/').pop() ?? p;
 
-// A crossing's references as one line: "calls a, b · imports c".
-function refsLine(refs?: Reference[]): string {
-  if (!refs || !refs.length) return '';
-  const byKind: Record<string, string[]> = {};
-  for (const r of refs) (byKind[r.kind] ??= []).push(r.name);
-  return ['call', 'use', 'import']
-    .filter((k) => byKind[k])
-    .map((k) => `${VERB[k]} ${byKind[k].join(', ')}`)
-    .join(' · ');
+// One reference, opened: where the source file uses it, and where the target
+// defines it. A crossing IS "this file reaches into that one", so both ends
+// together are that relationship made concrete — seeing one leaves you asking
+// the obvious next question.
+function RefCode({ x, r }: { x: Crossing; r: Reference }) {
+  return (
+    <div className="ref-code">
+      <CodeView path={x.from} line={r.line} caption={`${VERB[r.kind]} it here`} />
+      {r.def_line && <CodeView path={x.to} line={r.def_line} caption="defined here" />}
+    </div>
+  );
 }
 
 export function DetailPanel({
@@ -68,6 +71,7 @@ export function DetailPanel({
         <BoxView doc={doc} id={sel.id} onSelect={onSelect} onDescend={onDescend} />
       )}
       {sel?.kind === 'connection' && <ConnectionView doc={doc} id={sel.id} />}
+      {sel?.kind === 'file' && <FileView path={sel.id} />}
     </aside>
   );
 }
@@ -129,6 +133,9 @@ function BoxView({
 }) {
   const s = doc.subsystems.find((x) => x.id === id);
   if (!s) return null;
+  // At the bottom of a descent there's no architecture left to describe — the
+  // box is a file, so show the file.
+  if (s.file) return <FileView path={s.file} />;
   const Icon = iconFor(s.icon);
   const nameOf = (sid: string) =>
     doc.subsystems.find((x) => x.id === sid)?.name ?? 'unnamed subsystem';
@@ -168,6 +175,19 @@ function BoxView({
   );
 }
 
+// One file, whole. The bottom of the map: reached by opening a file box at a
+// descent's floor, or by picking a file out of the unwired tray — which is
+// otherwise a dead-end count, and nothing on this map should be a dead end.
+function FileView({ path }: { path: string }) {
+  return (
+    <div className="panel-body">
+      <h3 className="panel-title panel-file-head">{path.split('/').pop()}</h3>
+      <div className="panel-fact">{path}</div>
+      <CodeView path={path} />
+    </div>
+  );
+}
+
 function Relations({
   label,
   items,
@@ -201,12 +221,16 @@ function ConnectionView({ doc, id }: { doc: MapDocument; id: string }) {
   const c = doc.connections.find((x) => x.id === id);
   const [text, setText] = useState('');
   const [status, setStatus] = useState<'loading' | 'streaming' | 'done' | 'error'>('loading');
+  // Which reference is showing its code. One at a time — the panel is a column,
+  // not a pile.
+  const [open, setOpen] = useState<string | null>(null);
 
   useEffect(() => {
     if (!c) return;
     const ctrl = new AbortController();
     setText('');
     setStatus('loading');
+    setOpen(null);
     let got = false;
     streamConnectionSummary(
       REPO,
@@ -262,7 +286,29 @@ function ConnectionView({ doc, id }: { doc: MapDocument; id: string }) {
                   <span title={x.from}>{base(x.from)}</span> →{' '}
                   <span title={x.to}>{base(x.to)}</span>
                 </span>
-                {refsLine(x.references) && <span className="refs">{refsLine(x.references)}</span>}
+                {!!x.references?.length && (
+                  <span className="refs">
+                    {x.references.map((r) => {
+                      const key = `${i}:${j}:${r.name}`;
+                      const isOpen = open === key;
+                      return (
+                        <button
+                          key={r.name}
+                          className={`ref-chip${isOpen ? ' is-open' : ''}`}
+                          onClick={() => setOpen(isOpen ? null : key)}
+                          title={isOpen ? 'hide the code' : 'show the code'}
+                        >
+                          {VERB[r.kind]} <code>{r.name}</code>
+                        </button>
+                      );
+                    })}
+                  </span>
+                )}
+                {x.references?.map((r) =>
+                  open === `${i}:${j}:${r.name}` ? (
+                    <RefCode key={r.name} x={x} r={r} />
+                  ) : null,
+                )}
               </li>
             ))}
           </ul>
