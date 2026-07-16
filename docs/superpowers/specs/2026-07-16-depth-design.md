@@ -70,6 +70,8 @@ Inside subsystem A, some of A's files reach files outside A — that wiring is
 what produced A's connections on the top map. Hiding it would make the inside a
 lie by omission.
 
+An **exit** is now a defined term — see CONTEXT.md.
+
 Exits are shown **twice, deliberately**:
 - **On the canvas** — one faint ghost marker per outside subsystem the inner
   pieces reach, labelled with that subsystem's name, wired to the inner boxes
@@ -175,7 +177,31 @@ real browser. **4 works without 5** (descend and explore before code exists) and
 **5 works without 4** (a crossing's code opens from the top map today), so if
 either page phase disappoints, the other still stands.
 
+## What changed while building
+
+- **A descent is addressed by its trail, not by an id** (`GET /descend?path=a,b`).
+  Descending twice is the whole point of the floor rule, and an id alone can't
+  express where you're standing — which also decides what an exit should say.
+  From inside Onboarding Flow, the useful thing about a wire leaving it is that
+  it lands in Authentication next door, not somewhere in Frontend Core. Each
+  altitude on the way down refines who owns which file, so an exit names the
+  nearest box outside rather than always jumping to the top.
+- **Shiki loads on demand.** Measured at ~124kB gzipped — real enough that
+  someone reading the map without opening a file shouldn't pay it. Behind a
+  dynamic import, the map's own bundle grows 3kB (694→697kB gzip) and the
+  grammars arrive with the first code view.
+- **References are validated against their own line.** Carrying the lines
+  exposed that graphify matches names case-insensitively, so `JSON.stringify`
+  bound to a type called `Json` and invented a backend→frontend edge. A
+  reference that isn't within a line or two of where it claims to sit is a bad
+  match, and the edge under it goes too. Two of SpendWell's 127 file edges were
+  fictional. Out of this spec's scope, agreed separately.
+
 ## Unresolved
 
-- The 8-file floor is a guess; tune by eye in phase 4.
-- Shiki's fine-grained bundle cost is unmeasured; measure in phase 5.
+- The 8-file floor is a guess; tune by eye.
+- Subsystem naming still varies between runs even at temperature 0 — one
+  descent named a box "User Profile" and the next "User Settings". The next
+  lever is seeding, not sampling.
+- Phases 4 and 5 are built and compile, but the page has not been driven
+  end-to-end yet.

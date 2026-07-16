@@ -48,6 +48,14 @@ reaching into another, and its references are the specific things the source fil
 target. Each is one of three kinds — a **call**, an **import**, or a plain **use**.
 _Avoid_: symbol, usage, dependency (that is the subsystem-level term), edge
 
+**Exit**:
+Something the inside of a subsystem touches beyond itself, drawn at the edge of that subsystem's map
+when you descend into it. A subsystem's files reach files outside it — that wiring is what draws the
+subsystem's dependencies at the altitude above — so an inside that showed only its own boxes would be
+hiding its own reason for existing. An exit names the nearest box outside: a sibling where there is
+one, something further up otherwise.
+_Avoid_: port, boundary, external dependency, stub
+
 **Major Dependency**:
 A dependency that carries a meaningful share of the crossings leaving its source subsystem. Majors are
 drawn on the map. Every dependency is exactly one of major or minor.
