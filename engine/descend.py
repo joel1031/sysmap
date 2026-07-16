@@ -75,6 +75,9 @@ def _exits(edges: dict[str, float], inside: set[str], owner: dict[str, str],
     return [{"id": sid,
              "name": labels.get(sid, {}).get("name"),
              "icon": labels.get(sid, {}).get("icon"),
+             # where it lives — always somewhere back up the way you came, so
+             # the page can walk to it by trimming the trail it already has
+             "path": labels.get(sid, {}).get("path", []),
              "out": sorted(out.get(sid, ())),
              "in": sorted(into.get(sid, ()))}
             for sid in sorted(set(out) | set(into))]
@@ -88,7 +91,7 @@ def descend(root: Path, graph: dict, files: list[str], parent: dict,
     graph: the cached file graph (files, edges, references) for the whole repo.
     files: the subsystem's files. parent: its entry from the map above.
     owner: file -> the id of the box outside this one that holds it.
-    labels: id -> {name, icon}, to say what an exit leads to.
+    labels: id -> {name, icon, path}, to say what an exit leads to and where.
     """
     inside = set(files)
     edges = subset_edges(graph["edges"], inside)

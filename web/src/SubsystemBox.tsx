@@ -8,6 +8,7 @@ export interface BoxData {
   color: string;
   sizeStep: 1 | 2 | 3;
   icon: string | null;
+  file?: string; // set at the bottom of a descent, where a box is one file
   [key: string]: unknown;
 }
 
@@ -23,13 +24,17 @@ export function iconFor(name: string | null) {
 }
 
 // A subsystem at rest: an icon and a name on a colored card. Nothing else.
+// At the bottom of a descent the same card holds a single file, set in the
+// code's own typeface — you've stopped looking at architecture and started
+// looking at the thing itself.
 export function SubsystemBox({ data }: NodeProps) {
-  const { label, color, sizeStep, icon } = data as BoxData;
+  const { label, color, sizeStep, icon, file } = data as BoxData;
   const { w, h } = BOX_SIZE[sizeStep];
   const Icon = iconFor(icon);
   return (
     <div
-      className="subsystem-box"
+      className={`subsystem-box${file ? ' is-file' : ''}`}
+      title={file}
       style={{
         width: w,
         height: h,

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { MapDocument, Reference } from './types';
+import type { Exit, MapDocument, Reference } from './types';
 import type { Selection } from './MapView';
 import { iconFor } from './SubsystemBox';
 import { streamConnectionSummary } from './api';
@@ -27,6 +27,7 @@ export function DetailPanel({
   doc,
   sel,
   onSelect,
+  onDescend,
   onBack,
   canBack,
   onClose,
@@ -34,6 +35,7 @@ export function DetailPanel({
   doc: MapDocument;
   sel: Selection;
   onSelect: (s: Selection) => void;
+  onDescend: (id: string, name: string | null) => void;
   onBack: () => void;
   canBack: boolean;
   onClose: () => void;
@@ -52,14 +54,65 @@ export function DetailPanel({
           ×
         </button>
       </div>
-      {sel === null && (
-        <div className="panel-empty">
-          Select a subsystem or connection to explore its relationships.
-        </div>
+      {/* Nothing picked. Inside a subsystem that's still a question with an
+          answer — the subsystem you're standing in. At the top it isn't. */}
+      {sel === null &&
+        (doc.parent ? (
+          <ParentView doc={doc} />
+        ) : (
+          <div className="panel-empty">
+            Select a subsystem or connection to explore its relationships.
+          </div>
+        ))}
+      {sel?.kind === 'box' && (
+        <BoxView doc={doc} id={sel.id} onSelect={onSelect} onDescend={onDescend} />
       )}
-      {sel?.kind === 'box' && <BoxView doc={doc} id={sel.id} onSelect={onSelect} />}
       {sel?.kind === 'connection' && <ConnectionView doc={doc} id={sel.id} />}
     </aside>
+  );
+}
+
+// Where you are, when you're inside something and haven't picked anything in
+// it. Its exits are the same wiring the ghost markers draw on the canvas.
+function ParentView({ doc }: { doc: MapDocument }) {
+  const p = doc.parent;
+  if (!p) return null;
+  const Icon = iconFor(p.icon);
+  const n = doc.subsystems.reduce((a, s) => a + s.files.length, 0);
+  return (
+    <div className="panel-body">
+      <h3 className="panel-title">
+        {Icon && <Icon size={18} strokeWidth={2.1} />}
+        {p.name ?? 'unnamed subsystem'}
+      </h3>
+      {p.description && <p className="panel-desc">{p.description}</p>}
+      <div className="panel-fact">
+        You're inside — {n} file{n === 1 ? '' : 's'}
+        {doc.floor
+          ? ', shown as themselves'
+          : `, in ${doc.subsystems.length} piece${doc.subsystems.length === 1 ? '' : 's'}`}
+      </div>
+      <ExitList label="Reaches into" items={(doc.exits ?? []).filter((e) => e.out.length)} />
+      <ExitList label="Reached into by" items={(doc.exits ?? []).filter((e) => e.in.length)} />
+    </div>
+  );
+}
+
+function ExitList({ label, items }: { label: string; items: Exit[] }) {
+  if (!items.length) return null;
+  return (
+    <div className="panel-section">
+      <div className="panel-section-label">{label}</div>
+      <ul className="relation-list">
+        {items.map((e) => (
+          <li key={e.id}>
+            <span className="relation is-outside" title="outside this subsystem">
+              {e.name ?? 'elsewhere'}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -67,10 +120,12 @@ function BoxView({
   doc,
   id,
   onSelect,
+  onDescend,
 }: {
   doc: MapDocument;
   id: string;
   onSelect: (s: Selection) => void;
+  onDescend: (id: string, name: string | null) => void;
 }) {
   const s = doc.subsystems.find((x) => x.id === id);
   if (!s) return null;
@@ -101,6 +156,12 @@ function BoxView({
         {s.files.length} file{s.files.length === 1 ? '' : 's'}
         {s.island ? ' · no connections — fully self-contained' : ''}
       </div>
+      {/* A file has no inside. Anything else does. */}
+      {!s.file && (
+        <button className="explore" onClick={() => onDescend(s.id, s.name)}>
+          Explore inside ↓
+        </button>
+      )}
       <Relations label="Reaches into" items={into} onSelect={onSelect} />
       <Relations label="Reached into by" items={from} onSelect={onSelect} />
     </div>

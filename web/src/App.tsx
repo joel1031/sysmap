@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
-import { fetchMap } from './api';
+import { fetchDescent, fetchMap } from './api';
 import type { MapDocument } from './types';
 import { MapView } from './MapView';
 import type { Selection } from './MapView';
@@ -13,53 +13,133 @@ import './App.css';
 // command.
 const REPO = new URLSearchParams(window.location.search).get('repo');
 
+// One box you went inside of. The name rides along so the trail can be drawn
+// without holding on to every map you passed through.
+export interface Step {
+  id: string;
+  name: string;
+}
+
+// Where you are: how far down, and what's picked there. Both move, so both are
+// remembered together — see `go`.
+interface Where {
+  path: Step[];
+  sel: Selection;
+}
+
 // Two selections are the same pick if they point at the same thing.
 function sameSel(a: Selection, b: Selection): boolean {
   return a === b || (!!a && !!b && a.kind === b.kind && a.id === b.id);
 }
 
+function samePath(a: Step[], b: Step[]): boolean {
+  return a.length === b.length && a.every((s, i) => s.id === b[i].id);
+}
+
 export default function App() {
+  const [top, setTop] = useState<MapDocument | null>(null);
   const [doc, setDoc] = useState<MapDocument | null>(null);
+  const [path, setPath] = useState<Step[]>([]);
+  const [sel, setSel] = useState<Selection>(null);
+  const [history, setHistory] = useState<Where[]>([]);
   const [busy, setBusy] = useState(false);
+  const [descending, setDescending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-  const [sel, setSel] = useState<Selection>(null);
-  const [history, setHistory] = useState<Selection[]>([]);
   const [panelOpen, setPanelOpen] = useState(true);
+  // Every altitude visited this session. Climbing back is instant; the server
+  // caches too, so even after a reload a re-descent costs nothing.
+  const seen = useRef(new Map<string, MapDocument>());
+
+  const pathKey = useMemo(() => path.map((s) => s.id).join(','), [path]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
-  // Selecting anything opens the panel and remembers where you were, so Back
-  // can return to it. Re-picking the same thing doesn't add a step, and the
-  // empty start isn't worth going back to.
-  const select = useCallback(
-    (s: Selection) => {
-      if (sameSel(sel, s)) {
-        if (s) setPanelOpen(true);
+  // One move, whatever kind. Descending, climbing, picking and clearing all
+  // come through here, so Back can undo any of them without knowing which it
+  // was. The pristine start — top of the map, nothing picked — isn't worth
+  // returning to, so it isn't remembered.
+  const go = useCallback(
+    (next: Where) => {
+      const now: Where = { path, sel };
+      if (samePath(now.path, next.path) && sameSel(now.sel, next.sel)) {
+        if (next.sel) setPanelOpen(true);
         return;
       }
-      if (sel) setHistory((h) => [...h, sel]);
-      setSel(s);
-      if (s) setPanelOpen(true);
+      if (now.sel || now.path.length) setHistory((h) => [...h, now]);
+      setPath(next.path);
+      setSel(next.sel);
+      if (next.sel) setPanelOpen(true);
     },
-    [sel],
+    [path, sel],
+  );
+
+  const select = useCallback((s: Selection) => go({ path, sel: s }), [go, path]);
+
+  // Into a box: one step further down, nothing picked inside it yet — so the
+  // panel falls back to describing the box you just entered.
+  const descend = useCallback(
+    (id: string, name: string | null) =>
+      go({ path: [...path, { id, name: name ?? 'unnamed' }], sel: null }),
+    [go, path],
+  );
+
+  // The trail, clicked: climb to that altitude. Index -1 is the repo itself.
+  const climb = useCallback(
+    (i: number) => go({ path: path.slice(0, i + 1), sel: null }),
+    [go, path],
   );
 
   const back = useCallback(() => {
     if (!history.length) return;
     const prev = history[history.length - 1];
     setHistory((h) => h.slice(0, -1));
-    setSel(prev);
-    if (prev) setPanelOpen(true);
+    setPath(prev.path);
+    setSel(prev.sel);
+    if (prev.sel) setPanelOpen(true);
   }, [history]);
 
-  // A fresh map clears the selection and its history.
+  // The map for wherever we're standing. The top is already in hand; anything
+  // below it is fetched once and kept.
   useEffect(() => {
+    if (!top || !REPO) return;
+    if (!pathKey) {
+      setDoc(top);
+      return;
+    }
+    const hit = seen.current.get(pathKey);
+    if (hit) {
+      setDoc(hit);
+      return;
+    }
+    let alive = true;
+    setDescending(true);
+    fetchDescent(REPO, pathKey.split(','))
+      .then((d) => {
+        if (!alive) return;
+        seen.current.set(pathKey, d);
+        setDoc(d);
+      })
+      .catch((e) => {
+        if (alive) setError(String(e));
+      })
+      .finally(() => {
+        if (alive) setDescending(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [top, pathKey]);
+
+  // A fresh map is a fresh world: every altitude under it is stale.
+  useEffect(() => {
+    seen.current.clear();
+    setPath([]);
     setSel(null);
     setHistory([]);
-  }, [doc]);
+  }, [top]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -74,7 +154,7 @@ export default function App() {
     setBusy(true);
     setError(null);
     try {
-      setDoc(await fetchMap(REPO, refresh));
+      setTop(await fetchMap(REPO, refresh));
     } catch (e) {
       setError(String(e));
     } finally {
@@ -91,11 +171,13 @@ export default function App() {
   return (
     <div className="app">
       <header>
-        <strong>{doc ? doc.repo : 'codebase map'}</strong>
+        <strong>{top ? top.repo : 'codebase map'}</strong>
         {doc && (
           <>
             <span className="meta">
-              {doc.subsystems.length} subsystems · {backboneCount} connections
+              {doc.floor ? `${doc.subsystems.length} files` : `${doc.subsystems.length} subsystems`}
+              {' · '}
+              {backboneCount} connections
             </span>
             <button onClick={() => load(true)} disabled={busy}>
               {busy ? 're-mapping…' : 're-map'}
@@ -123,14 +205,40 @@ export default function App() {
           <div className="workspace">
             <div className="map-area">
               <ReactFlowProvider>
-                <MapView doc={doc} theme={theme} sel={sel} onSelect={select} />
+                <MapView
+                  doc={doc}
+                  theme={theme}
+                  sel={sel}
+                  onSelect={select}
+                  onDescend={descend}
+                  onExit={(depth, id) =>
+                    go({ path: path.slice(0, depth), sel: { kind: 'box', id } })
+                  }
+                />
               </ReactFlowProvider>
+              {path.length > 0 && (
+                <nav className="trail" aria-label="altitude">
+                  <button onClick={() => climb(-1)}>{top?.repo}</button>
+                  {path.map((s, i) => (
+                    <span key={s.id}>
+                      <span className="trail-sep">›</span>
+                      {i === path.length - 1 ? (
+                        <span className="trail-here">{s.name}</span>
+                      ) : (
+                        <button onClick={() => climb(i)}>{s.name}</button>
+                      )}
+                    </span>
+                  ))}
+                </nav>
+              )}
+              {descending && <div className="descending">Looking inside…</div>}
             </div>
             {panelOpen ? (
               <DetailPanel
                 doc={doc}
                 sel={sel}
                 onSelect={select}
+                onDescend={descend}
                 onBack={back}
                 canBack={history.length > 0}
                 onClose={() => setPanelOpen(false)}

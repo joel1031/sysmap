@@ -10,10 +10,11 @@ import {
 import type { Edge, Node } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import type { MapDocument } from './types';
-import { place } from './layout';
+import { exitId, place } from './layout';
 import type { Positions } from './layout';
 import { SubsystemBox } from './SubsystemBox';
 import { GhostBox } from './GhostBox';
+import { ExitBox } from './ExitBox';
 import { ConnectionEdge } from './ConnectionEdge';
 import type { Flow } from './ConnectionEdge';
 
@@ -32,7 +33,7 @@ const PALETTE = [
   '#5f9ea0',
 ];
 
-const nodeTypes = { subsystem: SubsystemBox, ghost: GhostBox };
+const nodeTypes = { subsystem: SubsystemBox, ghost: GhostBox, exit: ExitBox };
 const edgeTypes = { connection: ConnectionEdge };
 
 function buildNodes(doc: MapDocument, pos: Positions): Node[] {
@@ -45,8 +46,43 @@ function buildNodes(doc: MapDocument, pos: Positions): Node[] {
       color: PALETTE[i % PALETTE.length],
       sizeStep: s.size_step,
       icon: s.icon,
+      // At the bottom of a descent a box is one file, not a group of them.
+      file: s.file,
     },
   }));
+}
+
+// The subsystems this one touches from the outside, drawn at the edges of its
+// map. Not subsystems of this map — doors out of it.
+function buildExits(doc: MapDocument, pos: Positions): Node[] {
+  return (doc.exits ?? []).map((e) => ({
+    id: exitId(e.id),
+    type: 'exit',
+    position: pos[exitId(e.id)] ?? { x: 0, y: 0 },
+    draggable: false,
+    data: { label: e.name ?? 'elsewhere', icon: e.icon, target: e.id, depth: e.path.length },
+  }));
+}
+
+function buildExitEdges(doc: MapDocument, sel: Selection): Edge[] {
+  const out: Edge[] = [];
+  for (const e of doc.exits ?? []) {
+    const wire = (from: string, to: string, key: string, box: string) => {
+      const active = sel?.kind === 'box' && sel.id === box;
+      out.push({
+        id: key,
+        source: from,
+        target: to,
+        type: 'connection',
+        className: `is-exit${sel === null ? '' : active ? ' is-focus' : ' is-dim'}`,
+        selectable: false,
+        data: { flows: [] },
+      });
+    };
+    for (const b of e.out) wire(b, exitId(e.id), `xo-${e.id}-${b}`, b);
+    for (const b of e.in) wire(exitId(e.id), b, `xi-${e.id}-${b}`, b);
+  }
+  return out;
 }
 
 // One line per pair: the connection. Uniform thickness, no arrowheads — the
@@ -126,11 +162,15 @@ export function MapView({
   theme,
   sel,
   onSelect,
+  onDescend,
+  onExit,
 }: {
   doc: MapDocument;
   theme: 'dark' | 'light';
   sel: Selection;
   onSelect: (s: Selection) => void;
+  onDescend: (id: string, name: string | null) => void;
+  onExit: (depth: number, id: string) => void;
 }) {
   const [nodes, setNodes] = useState<Node[]>([]);
   const [ghosts, setGhosts] = useState<Node[]>([]);
@@ -142,13 +182,16 @@ export function MapView({
     return (sid: string) => m.get(sid) ?? '#8a93ad';
   }, [doc]);
 
-  const edges = useMemo(() => buildEdges(doc, sel, colorOf), [doc, sel, colorOf]);
+  const edges = useMemo(
+    () => buildEdges(doc, sel, colorOf).concat(buildExitEdges(doc, sel)),
+    [doc, sel, colorOf],
+  );
 
   useEffect(() => {
     let alive = true;
     place(doc).then((pos) => {
       if (!alive) return;
-      setNodes(buildNodes(doc, pos));
+      setNodes(buildNodes(doc, pos).concat(buildExits(doc, pos)));
       setGhosts(buildGhosts(doc, pos));
       setShowGhosts(false);
       requestAnimationFrame(() => fitView({ padding: 0.15 }));
@@ -171,8 +214,23 @@ export function MapView({
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         onNodesChange={(changes) => setNodes((ns) => applyNodeChanges(changes, ns))}
-        onNodeClick={(_, n) => onSelect({ kind: 'box', id: n.id })}
-        onEdgeClick={(_, e) => onSelect({ kind: 'connection', id: e.id })}
+        onNodeClick={(_, n) => {
+          if (n.type === 'exit') {
+            // A door out: climb to where that subsystem lives and pick it.
+            const { target, depth } = n.data as { target: string; depth: number };
+            onExit(depth, target);
+          } else if (n.type === 'subsystem') {
+            onSelect({ kind: 'box', id: n.id });
+          }
+        }}
+        // Inside. A file has no inside, so the bottom of a descent stays put.
+        onNodeDoubleClick={(_, n) => {
+          if (n.type !== 'subsystem' || doc.floor) return;
+          onDescend(n.id, (n.data as { label: string }).label);
+        }}
+        onEdgeClick={(_, e) => {
+          if (!e.className?.includes('is-exit')) onSelect({ kind: 'connection', id: e.id });
+        }}
         onPaneClick={() => onSelect(null)}
         proOptions={{ hideAttribution: true }}
         minZoom={0.2}

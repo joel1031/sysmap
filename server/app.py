@@ -156,7 +156,12 @@ def get_descend(repo: str, path: str, exts: str | None = None,
     # the time we descend, a file's owner is the nearest box that isn't the one
     # being opened: a sibling where there is one, something higher up otherwise.
     owner = {f: s["id"] for s in doc["subsystems"] for f in s["files"]}
-    labels = {s["id"]: s for s in doc["subsystems"]}
+
+    def label_at(d: dict, at: list[str]) -> dict:
+        return {s["id"]: {"name": s["name"], "icon": s["icon"], "path": at}
+                for s in d["subsystems"]}
+
+    labels = label_at(doc, [])
 
     for depth, sid in enumerate(ids):
         sub = next((s for s in doc["subsystems"] if s["id"] == sid), None)
@@ -177,7 +182,7 @@ def get_descend(repo: str, path: str, exts: str | None = None,
                 {"head": head, "schema": SCHEMA, "descents": descents}))
         if not last:
             owner.update({f: s["id"] for s in doc["subsystems"] for f in s["files"]})
-            labels.update({s["id"]: s for s in doc["subsystems"]})
+            labels.update(label_at(doc, ids[:depth + 1]))
     return doc
 
 

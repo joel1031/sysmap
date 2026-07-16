@@ -21,6 +21,13 @@ function dims(s: Subsystem) {
   return BOX_SIZE[s.size_step];
 }
 
+// An exit is laid out with everything else rather than pinned to a corner, so
+// it lands on the side its wiring actually comes from: something the inside
+// reaches settles below it, something reaching in settles above.
+export const exitId = (id: string) => `exit-${id}`;
+const exitW = (name: string | null) => 30 + (name ?? 'elsewhere').length * 6.6;
+const EXIT_H = 30;
+
 export async function place(doc: MapDocument): Promise<Positions> {
   const elk = new ELK();
   const majors = doc.connections.flatMap((c) =>
@@ -40,16 +47,29 @@ export async function place(doc: MapDocument): Promise<Positions> {
       'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
       'elk.layered.thoroughness': '30',
     },
-    children: doc.subsystems.map((s) => ({
-      id: s.id,
-      width: dims(s).w,
-      height: dims(s).h,
-    })),
-    edges: majors.map((d, i) => ({
-      id: `e${i}`,
-      sources: [d.source],
-      targets: [d.target],
-    })),
+    children: [
+      ...doc.subsystems.map((s) => ({
+        id: s.id,
+        width: dims(s).w,
+        height: dims(s).h,
+      })),
+      ...(doc.exits ?? []).map((e) => ({
+        id: exitId(e.id),
+        width: exitW(e.name),
+        height: EXIT_H,
+      })),
+    ],
+    edges: [
+      ...majors.map((d, i) => ({
+        id: `e${i}`,
+        sources: [d.source],
+        targets: [d.target],
+      })),
+      ...(doc.exits ?? []).flatMap((e) => [
+        ...e.out.map((b) => ({ id: `xo${e.id}${b}`, sources: [b], targets: [exitId(e.id)] })),
+        ...e.in.map((b) => ({ id: `xi${e.id}${b}`, sources: [exitId(e.id)], targets: [b] })),
+      ]),
+    ],
   };
   const out = await elk.layout(graph);
   const pos: Positions = {};
