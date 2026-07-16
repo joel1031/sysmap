@@ -4,6 +4,11 @@ graphify returns SYMBOL-level nodes/edges. We collapse to FILE-level:
   node  = a source file (relative to repo root)
   edge  = A depends-on B, weight = count of symbol edges A->B
 Direction is preserved (needed for the DSM layering method).
+
+Each edge also keeps its references — the named things A takes from B, and
+where both ends sit (the line A uses it on, the line B defines it on). An
+edge whose name isn't where graphify says it is gets dropped; see
+really_there().
 """
 from __future__ import annotations
 import re
@@ -28,6 +33,14 @@ _NON = re.compile(r"[^a-z0-9]+")
 
 def norm(s: str) -> str:
     return _NON.sub("_", s.lower()).strip("_")
+
+
+def _line(loc: str | None) -> int | None:
+    """graphify writes a position as 'L58' (and in one spot, a bare '58')."""
+    if not loc:
+        return None
+    s = str(loc).lstrip("L")
+    return int(s) if s.isdigit() else None
 
 
 def _abs(p: str | None) -> str | None:
@@ -66,6 +79,8 @@ def build_file_graph(repo_root: Path, exts: set[str] | None = None):
     node_file = {n["id"]: n["source_file"] for n in nodes}
     # readable name of a target node (a function/value/type), for references
     node_label = {n["id"]: n.get("label") for n in nodes}
+    # where that thing is DEFINED — the far end of a reference
+    node_line = {n["id"]: _line(n.get("source_location")) for n in nodes}
     # tier-2: exact file id (with extension) -> path
     file_id_map = {norm(str(f)): str(f) for f in files}
     # tier-3: ext-less file id -> path (longest-prefix fallback for symbol ids)
@@ -84,11 +99,34 @@ def build_file_graph(repo_root: Path, exts: set[str] | None = None):
                 return noext[k]
         return None
 
+    # graphify matches names case-insensitively, so `JSON.stringify` binds to a
+    # type called `Json` and invents an edge between two unrelated files. A real
+    # reference sits on the line graphify reports for it (give or take a line,
+    # for a call spread over several) — if the name isn't there, the match is
+    # wrong, and so is the edge resting on it.
+    _lines: dict[str, list[str]] = {}
+
+    def source_lines(path: str) -> list[str]:
+        if path not in _lines:
+            try:
+                _lines[path] = Path(path).read_text(errors="ignore").splitlines()
+            except OSError:
+                _lines[path] = []
+        return _lines[path]
+
+    def really_there(path: str, name: str, line: int | None) -> bool:
+        src = source_lines(path)
+        if line is None or not src:
+            return True  # nothing to check it against — take graphify's word
+        bare = name.rstrip("()").lstrip(".")
+        return any(bare in s for s in src[max(0, line - 3):line + 2])
+
     keep = {str(f) for f in files}
     weights: Counter = Counter()
-    # per file-edge A->B, the named things A takes from B: {name: kind}
-    refs: dict[tuple[str, str], dict[str, str]] = defaultdict(dict)
-    unresolved = 0
+    # per file-edge A->B, the named things A takes from B, each with both ends:
+    # {name: {kind, line (where A uses it), def_line (where B defines it)}}
+    refs: dict[tuple[str, str], dict[str, dict]] = defaultdict(dict)
+    unresolved = fabricated = 0
     for e in edges:
         # edge['source_file'] is the importer file directly (reliable)
         a = _abs(e.get("source_file"))
@@ -101,18 +139,29 @@ def build_file_graph(repo_root: Path, exts: set[str] | None = None):
         if a == b:
             continue
         ra, rb = rel(a), rel(b)
-        weights[(ra, rb)] += e.get("weight", 1.0)
         kind = KIND.get(e.get("relation"))
         name = node_label.get(e["target"]) if kind else None
+        line = _line(e.get("source_location"))
+        if name and not really_there(a, name, line):
+            fabricated += 1
+            continue  # matched to the wrong file — the edge goes with it
+        weights[(ra, rb)] += e.get("weight", 1.0)
         if name:
             cur = refs[(ra, rb)].get(name)
-            if cur is None or KIND_RANK[kind] < KIND_RANK[cur]:
-                refs[(ra, rb)][name] = kind
+            if cur is None or KIND_RANK[kind] < KIND_RANK[cur["kind"]]:
+                # one occurrence per name — the most telling one, and the line
+                # it sits on. Its other uses are a count, and counts aren't
+                # what makes this readable.
+                refs[(ra, rb)][name] = {
+                    "kind": kind,
+                    "line": line,
+                    "def_line": node_line.get(e["target"]),
+                }
 
-    def ref_list(named: dict[str, str]) -> list[dict[str, str]]:
+    def ref_list(named: dict[str, dict]) -> list[dict]:
         # calls first, then uses, then imports; alphabetical within a kind
-        items = sorted(named.items(), key=lambda kv: (KIND_RANK[kv[1]], kv[0]))
-        return [{"name": n, "kind": k} for n, k in items]
+        items = sorted(named.items(), key=lambda kv: (KIND_RANK[kv[1]["kind"]], kv[0]))
+        return [{"name": n, **r} for n, r in items]
 
     file_list = sorted(rel(str(f)) for f in files)
     return {
@@ -126,6 +175,7 @@ def build_file_graph(repo_root: Path, exts: set[str] | None = None):
             "n_file_edges": len(weights),
             "n_edges_with_refs": len(refs),
             "unresolved_endpoints": unresolved,
+            "fabricated_refs": fabricated,
             "relations": dict(Counter(e.get("relation") for e in edges)),
         },
     }

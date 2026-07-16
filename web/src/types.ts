@@ -6,6 +6,10 @@
 export interface Reference {
   name: string;
   kind: 'call' | 'import' | 'use';
+  // Both ends: where the source file uses it, and where the target defines it.
+  // Either can be null when graphify didn't report a position.
+  line?: number | null;
+  def_line?: number | null;
 }
 
 export interface Crossing {

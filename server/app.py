@@ -42,8 +42,9 @@ CACHE = Path(__file__).resolve().parent / "cache"
 CACHE.mkdir(exist_ok=True)
 
 # Bump when the map document's shape changes, so old cache entries are rebuilt
-# rather than served stale. 2: crossings carry references.
-SCHEMA = 2
+# rather than served stale. 2: crossings carry references. 3: references carry
+# their call site and definition lines.
+SCHEMA = 3
 
 app = FastAPI(title="system-design map server")
 app.add_middleware(  # the web dev server runs on its own port
