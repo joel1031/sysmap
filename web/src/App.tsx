@@ -36,6 +36,22 @@ function samePath(a: Step[], b: Step[]): boolean {
   return a.length === b.length && a.every((s, i) => s.id === b[i].id);
 }
 
+// Work happening where the map should be. It covers the map rather than
+// sitting in a corner: until an altitude is computed, the boxes underneath are
+// the ones you were looking at *before*, and leaving them on display asserts a
+// place you aren't yet.
+function Loading({ title, note }: { title: string; note: string }) {
+  return (
+    <div className="loading" role="status" aria-live="polite">
+      <div className="loading-card">
+        <div className="spinner" />
+        <div className="loading-title">{title}</div>
+        <div className="loading-note">{note}</div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [top, setTop] = useState<MapDocument | null>(null);
   const [doc, setDoc] = useState<MapDocument | null>(null);
@@ -200,7 +216,12 @@ export default function App() {
           </div>
         )}
         {error && <div className="error">{error}</div>}
-        {busy && !doc && <div className="empty">Running the pipeline…</div>}
+        {busy && !doc && (
+          <Loading
+            title={`Mapping ${REPO?.split('/').pop() ?? 'this repo'}`}
+            note="Reading every file, working out what groups with what, and naming the pieces. The first run on a repo takes a few minutes; after that it's instant until the code changes."
+          />
+        )}
         {doc && (
           <div className="workspace">
             <div className="map-area">
@@ -231,7 +252,19 @@ export default function App() {
                   ))}
                 </nav>
               )}
-              {descending && <div className="descending">Looking inside…</div>}
+              {busy ? (
+                <Loading
+                  title={`Re-mapping ${top?.repo ?? ''}`}
+                  note="The code changed, so everything is being worked out again from scratch."
+                />
+              ) : (
+                descending && (
+                  <Loading
+                    title={`Looking inside ${path[path.length - 1]?.name ?? ''}`}
+                    note="Re-grouping this subsystem's files into the pieces it's made of, and naming them. This happens once per subsystem — after that, going back in is instant."
+                  />
+                )
+              )}
             </div>
             {panelOpen ? (
               <DetailPanel
