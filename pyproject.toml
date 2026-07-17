@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sysmap"
+version = "0.1.0"
+description = "A traversable map of your codebase — what its subsystems are, and how they actually connect."
+requires-python = ">=3.11"
+keywords = ["codebase", "architecture", "visualization", "tree-sitter"]
+
+# Every one of these is imported by sysmap/. Versions are floors, not pins:
+# the lower bound is what this was built and measured against, and nothing
+# here is being asked for behaviour that only one release has.
+#
+# graphifyy is the tree-sitter extractor — note the spelling. The module it
+# installs is `graphify`, and a `graphify` on PyPI is a different project
+# entirely, so a manifest that says the obvious thing installs the wrong one.
+# It pulls in all 29 tree-sitter grammars itself, which is why the five
+# languages we read need no grammar dependencies of their own here.
+dependencies = [
+    "anthropic>=0.116",
+    "fastapi>=0.139",
+    "graphifyy>=0.9.9",
+    "igraph>=1.0",
+    "leidenalg>=0.12",
+    "pydantic>=2.13",
+    "scikit-learn>=1.9",
+    "uvicorn>=0.51",
+]
+
+[project.urls]
+Homepage = "https://github.com/joel1031/sysmap"
+Source = "https://github.com/joel1031/sysmap"
+
+[tool.hatch.build.targets.wheel]
+# Only the tool ships. `experiments/` is the research harness — the baselines
+# we measured against and rejected — and it is worth keeping in the repo and
+# out of everyone's site-packages.
+packages = ["sysmap"]
