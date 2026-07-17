@@ -211,8 +211,8 @@ export default function App() {
       <main>
         {!REPO && (
           <div className="error">
-            No repository given. Run <code>map</code> from inside the repo you
-            want to see.
+            No repository given. Run <code>sysmap</code> from inside the repo
+            you want to see.
           </div>
         )}
         {error && <div className="error">{error}</div>}
@@ -255,7 +255,7 @@ export default function App() {
               {busy ? (
                 <Loading
                   title={`Re-mapping ${top?.repo ?? ''}`}
-                  note="The code changed, so everything is being worked out again from scratch."
+                  note="Reading every file again and working out the groups from scratch. This takes about as long as the first run did."
                 />
               ) : (
                 descending && (

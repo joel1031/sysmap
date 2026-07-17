@@ -6,6 +6,7 @@ build-backend = "hatchling.build"
 name = "sysmap"
 version = "0.1.0"
 description = "A traversable map of your codebase — what its subsystems are, and how they actually connect."
+readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
 license-files = ["LICENSE"]
