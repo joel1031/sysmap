@@ -7,6 +7,7 @@ nothing to start alongside it.
 """
 from __future__ import annotations
 import argparse
+import os
 import socket
 import sys
 import threading
@@ -56,7 +57,15 @@ def main(argv: list[str] | None = None) -> int:
                    help="a repo, or a directory inside one (default: here)")
     p.add_argument("--port", type=int, default=8642)
     p.add_argument("--no-open", action="store_true", help="don't open a browser")
+    p.add_argument("--api-key", help="names the boxes; without one they name "
+                                     "themselves (default: ANTHROPIC_API_KEY)")
     args = p.parse_args(argv)
+
+    if args.api_key:
+        # Overwrite rather than default into: everything downstream reads the
+        # key off the environment, and asking for one here is a clearer say
+        # than whatever the shell was already exporting.
+        os.environ["ANTHROPIC_API_KEY"] = args.api_key
 
     start = Path(args.repo).expanduser().resolve()
     if not start.is_dir():
@@ -76,6 +85,11 @@ def main(argv: list[str] | None = None) -> int:
               "which runs Vite.", file=sys.stderr)
         return 1
 
+    # After that import, not before: importing the server is what reads .env,
+    # and asking any earlier would call a key missing that is about to be found.
+    from sysmap.engine.naming import have_key
+    keyless = not have_key()
+
     port = free_port(args.port)
     url = f"http://127.0.0.1:{port}/?repo={urllib.parse.quote(str(repo))}"
     # flush: these say where to look, and the next thing this process does is
@@ -85,6 +99,9 @@ def main(argv: list[str] | None = None) -> int:
     print(f"        {url}", flush=True)
     print("        first run parses the whole repo — minutes on a big one; "
           "Ctrl+C to stop", flush=True)
+    if keyless:
+        print("        no key, so the boxes will name themselves — pass "
+              "--api-key for model-written names", flush=True)
     if not args.no_open:
         threading.Thread(target=_open_when_ready, args=(url, port),
                          daemon=True).start()

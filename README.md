@@ -29,11 +29,19 @@ the nearest `.git`, starts a local server, and opens a browser.
 The first run reads every tracked file: seconds on a small repository, minutes on a large one.
 Results are held per commit, so every run after that is instant until you commit something.
 
-For model-written names, set a key before running:
+For model-written names, pass a key:
+
+```bash
+uvx --from git+https://github.com/joel1031/sysmap sysmap --api-key sk-...
+```
+
+Or export it once and leave the command alone, which is easier on a key you use every day:
 
 ```bash
 export ANTHROPIC_API_KEY=...
 ```
+
+The flag wins where both are set.
 
 One request per map, plus one for each arrow you open. Both are kept.
 
