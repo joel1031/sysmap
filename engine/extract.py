@@ -48,7 +48,17 @@ def _abs(p: str | None) -> str | None:
     return None if p is None else str((Path.cwd() / p).resolve())
 
 
-CODE_EXT = {".ts", ".tsx", ".js", ".jsx", ".mjs", ".cts", ".mts"}
+# The languages the engine has been measured on and reads well: C, Go, Java,
+# Python, TypeScript/JS. See docs/language-support.md for what each was measured
+# against and what was left out — a language is here because its edges were
+# checked by eye, not because tree-sitter has a grammar for it.
+CODE_EXT = {
+    ".c", ".h",
+    ".go",
+    ".java",
+    ".py",
+    ".ts", ".tsx", ".js", ".jsx", ".mjs",
+}
 
 
 def tracked_files(repo_root: Path) -> list[Path]:
@@ -64,8 +74,13 @@ def tracked_files(repo_root: Path) -> list[Path]:
 
 
 def build_file_graph(repo_root: Path, exts: set[str] | None = None):
+    # Resolved once, here, so every path in this function is the same kind of
+    # path. graphify's paths come back resolved via _abs(), and a repo reached
+    # through a symlink (/tmp on macOS, a symlinked home) would otherwise never
+    # match them — every edge dropped, no error, an empty map.
+    repo_root = repo_root.resolve()
     exts = exts or CODE_EXT
-    files = [f for f in tracked_files(repo_root) if f.suffix in exts]
+    files = [f.resolve() for f in tracked_files(repo_root) if f.suffix in exts]
 
     res = extract(files, cache_root=Path("."), parallel=False)
     nodes, edges = res["nodes"], res["edges"]
