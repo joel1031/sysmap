@@ -1,6 +1,9 @@
 import type { MapDocument } from './types';
 
-const SERVER = 'http://localhost:8642';
+// Built, the page is served by the same process that answers these calls, so
+// every path is relative and the port is nobody's business. Under the dev
+// server the page comes from Vite instead, and has to be told where to look.
+const SERVER = import.meta.env.DEV ? 'http://localhost:8642' : '';
 
 export async function fetchMap(repo: string, refresh = false): Promise<MapDocument> {
   const params = new URLSearchParams({ repo });

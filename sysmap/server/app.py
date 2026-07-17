@@ -28,6 +28,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root, for sysmap/
 warnings.filterwarnings("ignore")
@@ -250,3 +251,16 @@ def get_connection(repo: str, id: str, exts: str | None = None,
             cache_file.write_text(json.dumps(cached))
 
     return StreamingResponse(gen(), media_type="text/plain")
+
+
+# --- the page ---------------------------------------------------------------
+# Mounted last, and only here at the end of the file, because "/" catches
+# everything: mounted earlier it would answer /map itself and the endpoints
+# above would never be reached.
+#
+# Absent when the page hasn't been built — running the server straight out of a
+# source checkout, where Vite serves the page on its own port instead. The API
+# still works; there is just nothing at "/".
+WEB = Path(__file__).resolve().parent / "_web"
+if (WEB / "index.html").exists():
+    app.mount("/", StaticFiles(directory=WEB, html=True), name="page")

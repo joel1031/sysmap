@@ -4,4 +4,7 @@ __pycache__/
 /out/
 /graphify-out/
 sysmap/server/cache/
+sysmap/server/_web/
+web/dist/
+dist/
 .superpowers/

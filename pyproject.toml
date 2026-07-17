@@ -31,9 +31,17 @@ dependencies = [
     "uvicorn>=0.51",
 ]
 
+[project.scripts]
+sysmap = "sysmap.cli:main"
+
 [project.urls]
 Homepage = "https://github.com/joel1031/sysmap"
 Source = "https://github.com/joel1031/sysmap"
+
+# Compiles the React page during the install and puts it in the package, so
+# running sysmap needs no Node and starts no second process. See hatch_build.py.
+[tool.hatch.build.targets.wheel.hooks.custom]
+path = "hatch_build.py"
 
 [tool.hatch.build.targets.wheel]
 # Only the tool ships. `experiments/` is the research harness — the baselines
