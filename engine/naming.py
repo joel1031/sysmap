@@ -140,12 +140,12 @@ if __name__ == "__main__":
     from engine.env import load_env
     load_env()
     from engine.extract import build_file_graph
-    from engine.signals import build_signals
+    from engine.signals import edge_signals
     from engine.grouping import leiden
 
     ROOT = Path("/Users/joelacosta/projects/SpendWell")
     g = build_file_graph(ROOT)
-    sig = build_signals(g["files"], g["edges"], ROOT)
+    sig = edge_signals(g["files"], g["edges"], ROOT)
     L = leiden(g["files"], g["edges"], sig["combined"])
     names = name_groups(L["groups"], ROOT.name)
     for i, gr in enumerate(L["groups"]):

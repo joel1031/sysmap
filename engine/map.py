@@ -113,13 +113,13 @@ if __name__ == "__main__":
 
     warnings.filterwarnings("ignore")
     from engine.extract import build_file_graph
-    from engine.signals import build_signals
+    from engine.signals import edge_signals
     from engine.grouping import leiden
     from engine.subsystem_graph import build_subsystem_graph
 
     ROOT = Path("/Users/joelacosta/projects/SpendWell")
     g = build_file_graph(ROOT)
-    sig = build_signals(g["files"], g["edges"], ROOT)
+    sig = edge_signals(g["files"], g["edges"], ROOT)
     m = leiden(g["files"], g["edges"], sig["combined"])
     sg = build_subsystem_graph(m["groups"], g["edges"])
     doc = build_map(ROOT.name, m["groups"], sg)

@@ -9,7 +9,7 @@ draws it with the same code that draws the top map.
 Two things make a descent different from the top-level run:
 
   - The signals are rebuilt over the subset, never sliced from the top-level
-    matrix. build_signals scales each signal by the largest value it sees, and
+    matrix. edge_signals scales each signal by the largest value it sees, and
     the vocabulary signal weighs a word by how rare it is across the files it
     is handed. Reuse the whole repo's numbers inside one subsystem and
     everything scores samey, with no contrast left for Leiden to split on —
@@ -30,7 +30,7 @@ from pathlib import Path
 
 from engine.grouping import leiden
 from engine.map import build_map
-from engine.signals import build_signals
+from engine.signals import edge_signals
 from engine.subsystem_graph import build_subsystem_graph
 
 # Under this many files there is nothing worth splitting: a "subsystem" of four
@@ -100,7 +100,7 @@ def descend(root: Path, graph: dict, files: list[str], parent: dict,
     # group means it found no seam; forcing one would be inventing structure.
     floor = len(files) < FLOOR
     if not floor:
-        sig = build_signals(files, edges, root)
+        sig = edge_signals(files, edges, root)
         groups = leiden(files, edges, sig["combined"])["groups"]
         floor = len(groups) < 2
     if floor:

@@ -22,7 +22,7 @@ from engine.env import load_env
 load_env()  # pull ANTHROPIC_API_KEY from .env before anything needs it
 
 from engine.extract import build_file_graph
-from engine.signals import build_signals
+from engine.signals import edge_signals
 from engine.subsystem_graph import build_subsystem_graph
 from src import methods
 from src.report import render
@@ -54,7 +54,7 @@ def main(argv):
     print("      ", g["_diag"])
 
     print("[2/4] signals (structural + lexical + co-change)…")
-    sig = build_signals(files, edges, root)
+    sig = edge_signals(files, edges, root)
     combined = sig["combined"]
 
     print("[3/4] running methods…")

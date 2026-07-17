@@ -33,7 +33,7 @@ from engine.env import load_env
 load_env()  # ANTHROPIC_API_KEY for naming; without it subsystems come out unnamed
 
 from engine.extract import build_file_graph
-from engine.signals import build_signals
+from engine.signals import edge_signals
 from engine.grouping import leiden
 from engine.subsystem_graph import build_subsystem_graph
 from engine.map import build_map
@@ -79,7 +79,7 @@ def _run_pipeline(root: Path, exts: set[str] | None) -> tuple[dict, dict]:
     Caching it means descending never re-parses the repo.
     """
     g = build_file_graph(root, exts=exts)
-    sig = build_signals(g["files"], g["edges"], root)
+    sig = edge_signals(g["files"], g["edges"], root)
     m = leiden(g["files"], g["edges"], sig["combined"])
     sg = build_subsystem_graph(m["groups"], g["edges"])
     try:

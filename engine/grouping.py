@@ -20,6 +20,9 @@ def groups_to_list(labels, files):
 
 
 def leiden(files, edges_dir, combined):
+    """combined: {(i, j): weight} for pairs with a real edge — see
+    engine.signals.edge_signals. Only those pairs are ever read, which is why
+    the signals aren't a square matrix."""
     # community detection runs on the SPARSE structural graph (real wiring),
     # with each real edge's weight enriched by the combined signal.
     n = len(files)
@@ -29,7 +32,10 @@ def leiden(files, edges_dir, combined):
         a, b = key.split("|")
         if a in idx and b in idx:
             i, j = sorted((idx[a], idx[b]))
-            pair_w[(i, j)] = max(pair_w.get((i, j), 0.0), float(combined[i][j]) + 0.05)
+            if i == j:
+                continue
+            pair_w[(i, j)] = max(pair_w.get((i, j), 0.0),
+                                 combined.get((i, j), 0.0) + 0.05)
     edges = list(pair_w.keys())
     weights = [pair_w[e] for e in edges]
     G = ig.Graph(n=n, edges=edges)
