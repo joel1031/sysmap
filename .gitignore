@@ -3,5 +3,5 @@ __pycache__/
 *.pyc
 /out/
 /graphify-out/
-server/cache/
+sysmap/server/cache/
 .superpowers/

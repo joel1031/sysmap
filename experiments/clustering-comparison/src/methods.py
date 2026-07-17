@@ -15,7 +15,7 @@ import networkx as nx
 from scipy.cluster.hierarchy import linkage, fcluster
 from scipy.spatial.distance import squareform
 
-from engine.grouping import groups_to_list, leiden  # noqa: F401  (re-exported for run.py)
+from sysmap.engine.grouping import groups_to_list, leiden  # noqa: F401  (re-exported for run.py)
 
 
 # --- 1. folders (baseline) -------------------------------------------------

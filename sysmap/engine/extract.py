@@ -202,7 +202,7 @@ if __name__ == "__main__":
     # A repo to look at: the one named, or the one you're standing in.
     ROOT = Path(sys.argv[1] if len(sys.argv) > 1 else ".").resolve()
     g = build_file_graph(ROOT)
-    out = Path(__file__).resolve().parent.parent / "out"
+    out = Path(__file__).resolve().parents[2] / "out"
     out.mkdir(exist_ok=True)
     (out / "structural.json").write_text(json.dumps(g, indent=2))
     d = g["_diag"]

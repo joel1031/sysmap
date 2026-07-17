@@ -32,7 +32,7 @@ SERVER_PORT=8642
 WEB_PORT=5173
 
 cd "$PROJECT_ROOT"
-"$VENV_BIN/uvicorn" server.app:app --port "$SERVER_PORT" --log-level warning &
+"$VENV_BIN/uvicorn" sysmap.server.app:app --port "$SERVER_PORT" --log-level warning &
 SERVER_PID=$!
 trap 'kill "$SERVER_PID" 2>/dev/null' EXIT
 

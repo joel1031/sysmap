@@ -26,17 +26,17 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse, StreamingResponse
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # repo root, for engine/
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root, for sysmap/
 warnings.filterwarnings("ignore")
 
-from engine.env import load_env
+from sysmap.engine.env import load_env
 load_env()  # ANTHROPIC_API_KEY for naming; without it subsystems come out unnamed
 
-from engine.extract import build_file_graph
-from engine.signals import edge_signals
-from engine.grouping import leiden
-from engine.subsystem_graph import build_subsystem_graph
-from engine.map import build_map
+from sysmap.engine.extract import build_file_graph
+from sysmap.engine.signals import edge_signals
+from sysmap.engine.grouping import leiden
+from sysmap.engine.subsystem_graph import build_subsystem_graph
+from sysmap.engine.map import build_map
 
 CACHE = Path(__file__).resolve().parent / "cache"
 CACHE.mkdir(exist_ok=True)
@@ -82,7 +82,7 @@ def _run_pipeline(root: Path, exts: set[str] | None) -> tuple[dict, dict]:
     sig = edge_signals(g["files"], g["edges"], root)
     m = leiden(g["files"], g["edges"], sig["combined"])
     sg = build_subsystem_graph(m["groups"], g["edges"])
-    from engine.naming import label_groups
+    from sysmap.engine.naming import label_groups
     names, how = label_groups(m["groups"], root.name, sig)
     doc = build_map(root.name, m["groups"], sg, names, g["references"])
     doc["naming"] = how  # 'model' or 'words' — the page says which it's showing
@@ -174,7 +174,7 @@ def get_descend(repo: str, path: str, exts: str | None = None,
             if graph is None:
                 graph = _load(_cache_file(root, exts, ".graph"),
                               head, "file graph")["graph"]
-            from engine.descend import descend
+            from sysmap.engine.descend import descend
             doc = descend(root, graph, sub["files"], sub, owner, labels, root.name)
             descents[key] = doc
             dfile.write_text(json.dumps(
@@ -226,7 +226,7 @@ def get_connection(repo: str, id: str, exts: str | None = None,
     if not refresh and id in sentences:
         return PlainTextResponse(sentences[id])
 
-    from engine.describe import build_prompt, stream_summary
+    from sysmap.engine.describe import build_prompt, stream_summary
     subs_by_id = {s["id"]: s for s in doc["subsystems"]}
     prompt = build_prompt(conn, subs_by_id)
 

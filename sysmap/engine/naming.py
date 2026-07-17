@@ -29,7 +29,7 @@ from pydantic import BaseModel
 
 import anthropic
 
-from engine.voice import HOUSE_VOICE
+from sysmap.engine.voice import HOUSE_VOICE
 
 MODEL = "claude-haiku-4-5-20251001"
 
@@ -298,11 +298,11 @@ if __name__ == "__main__":
     from pathlib import Path
     import warnings
     warnings.filterwarnings("ignore")
-    from engine.env import load_env
+    from sysmap.engine.env import load_env
     load_env()
-    from engine.extract import build_file_graph
-    from engine.signals import edge_signals
-    from engine.grouping import leiden
+    from sysmap.engine.extract import build_file_graph
+    from sysmap.engine.signals import edge_signals
+    from sysmap.engine.grouping import leiden
 
     ROOT = Path(sys.argv[1] if len(sys.argv) > 1 else ".").resolve()
     g = build_file_graph(ROOT)

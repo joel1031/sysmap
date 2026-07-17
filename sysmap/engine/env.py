@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-_ENV = Path(__file__).resolve().parent.parent / ".env"
+_ENV = Path(__file__).resolve().parents[2] / ".env"
 
 
 def load_env() -> None:

@@ -113,10 +113,10 @@ if __name__ == "__main__":
     from pathlib import Path
 
     warnings.filterwarnings("ignore")
-    from engine.extract import build_file_graph
-    from engine.signals import edge_signals
-    from engine.grouping import leiden
-    from engine.subsystem_graph import build_subsystem_graph
+    from sysmap.engine.extract import build_file_graph
+    from sysmap.engine.signals import edge_signals
+    from sysmap.engine.grouping import leiden
+    from sysmap.engine.subsystem_graph import build_subsystem_graph
 
     ROOT = Path(sys.argv[1] if len(sys.argv) > 1 else ".").resolve()
     g = build_file_graph(ROOT)

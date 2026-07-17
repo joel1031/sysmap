@@ -17,14 +17,14 @@ Usage:
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root, for engine/
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root, for sysmap/
 
-from engine.env import load_env
+from sysmap.engine.env import load_env
 load_env()  # pull ANTHROPIC_API_KEY from .env before anything needs it
 
-from engine.extract import build_file_graph
-from engine.signals import edge_signals
-from engine.subsystem_graph import build_subsystem_graph
+from sysmap.engine.extract import build_file_graph
+from sysmap.engine.signals import edge_signals
+from sysmap.engine.subsystem_graph import build_subsystem_graph
 from src import methods
 from src.report import render
 
@@ -89,7 +89,7 @@ def main(argv):
     # unnamed on purpose: it is the strawman, and a plausible name on a bad
     # grouping only makes it look credible.
     try:
-        from engine.naming import name_groups, name_layers
+        from sysmap.engine.naming import name_groups, name_layers
         for m in results:
             if _is_baseline(m):
                 continue

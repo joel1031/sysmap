@@ -17,7 +17,7 @@ import subprocess
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-from engine.signals import _TOK, _subwords
+from sysmap.engine.signals import _TOK, _subwords
 
 
 def _minmax(M: np.ndarray) -> np.ndarray:

@@ -28,10 +28,10 @@ from __future__ import annotations
 from collections import defaultdict
 from pathlib import Path
 
-from engine.grouping import leiden
-from engine.map import build_map
-from engine.signals import edge_signals
-from engine.subsystem_graph import build_subsystem_graph
+from sysmap.engine.grouping import leiden
+from sysmap.engine.map import build_map
+from sysmap.engine.signals import edge_signals
+from sysmap.engine.subsystem_graph import build_subsystem_graph
 
 # Under this many files there is nothing worth splitting: a "subsystem" of four
 # files is just four files. A starting guess, tuned by eye.
@@ -109,7 +109,7 @@ def descend(root: Path, graph: dict, files: list[str], parent: dict,
     sg = build_subsystem_graph(groups, edges)
     names, how = None, "files"  # at the floor a file is its own name
     if not floor:
-        from engine.naming import label_groups
+        from sysmap.engine.naming import label_groups
         names, how = label_groups(groups, repo_name, sig, parent=parent.get("name"))
 
     doc = build_map(repo_name, groups, sg, names, graph.get("references"))

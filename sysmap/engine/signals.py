@@ -178,7 +178,7 @@ if __name__ == "__main__":
     import sys
     import warnings
     warnings.filterwarnings("ignore")
-    from engine.extract import build_file_graph
+    from sysmap.engine.extract import build_file_graph
 
     ROOT = Path(sys.argv[1] if len(sys.argv) > 1 else ".").resolve()
     g = build_file_graph(ROOT)

@@ -10,8 +10,8 @@ from typing import Iterator
 
 import anthropic
 
-from engine.naming import MODEL
-from engine.voice import HOUSE_VOICE
+from sysmap.engine.naming import MODEL
+from sysmap.engine.voice import HOUSE_VOICE
 
 _RANK = {"call": 0, "use": 1, "import": 2}
 _MAX_REFS = 30  # keep the prompt to a handful of names, per the cost budget
