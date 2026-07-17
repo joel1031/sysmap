@@ -175,11 +175,12 @@ def edge_signals(files, edges, repo_root: Path, weights=(1 / 3, 1 / 3, 1 / 3)):
 
 
 if __name__ == "__main__":
+    import sys
     import warnings
     warnings.filterwarnings("ignore")
     from engine.extract import build_file_graph
 
-    ROOT = Path("/Users/joelacosta/projects/SpendWell")
+    ROOT = Path(sys.argv[1] if len(sys.argv) > 1 else ".").resolve()
     g = build_file_graph(ROOT)
     sig = edge_signals(g["files"], g["edges"], ROOT)
     n = len(sig["files"])

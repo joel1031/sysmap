@@ -29,7 +29,7 @@ File selection is whatever `git ls-files` returns for the repo — the whole tre
 `.gitignore`, narrowed by the extension filter. No target directories to pass.
 
 ```bash
-./.venv/bin/python run.py                       # defaults to SpendWell
+./.venv/bin/python run.py                       # the repo you're standing in
 ./.venv/bin/python run.py <repo_root>            # any repo
 ./.venv/bin/python run.py <repo_root> --exts .py  # override source extensions
 ```
@@ -38,7 +38,7 @@ The report lands in `out/report-<repo>.html`.
 
 ```bash
 ./.venv/bin/python run.py repos/hono
-./.venv/bin/python run.py /Users/you/projects/centerpiece-api
+./.venv/bin/python run.py /Users/you/projects/your-api
 ```
 
 Test repos are cloned into `repos/` (git-ignored). Clone blobless — the evolutionary signal reads git

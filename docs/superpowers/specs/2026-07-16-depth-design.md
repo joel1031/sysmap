@@ -92,7 +92,7 @@ Depth adds a second axis of return, and the panel already has the first
   descending, climbing — pushes one stack. **Back undoes the last move,
   whatever kind it was.** `App.tsx`'s `history` becomes a stack of
   `{altitude, sel}` rather than bare `Selection`.
-- **A breadcrumb on the map** (`SpendWell › Payments › Refunds`) — orientation,
+- **A breadcrumb on the map** (`the app › Payments › Refunds`) — orientation,
   and a jump to any altitude up the chain. It lives on the map area, not the
   panel: altitude is a property of the map; the panel is about the selection.
 
@@ -194,7 +194,7 @@ either page phase disappoints, the other still stands.
   exposed that graphify matches names case-insensitively, so `JSON.stringify`
   bound to a type called `Json` and invented a backend→frontend edge. A
   reference that isn't within a line or two of where it claims to sit is a bad
-  match, and the edge under it goes too. Two of SpendWell's 127 file edges were
+  match, and the edge under it goes too. Two of the React Native app's 127 file edges were
   fictional. Out of this spec's scope, agreed separately.
 
 ## What using it added
@@ -224,7 +224,7 @@ connection as far as the code on both ends of it.
 
 ## Unresolved
 
-- The 8-file floor is still a guess. It behaves on SpendWell, which is small —
+- The 8-file floor is still a guess. It behaves on the React Native app, which is small —
   it wants judging against a repo with subsystems big enough to descend two or
   three times.
 - Subsystem naming still varies between runs even at temperature 0 — one

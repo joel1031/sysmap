@@ -1,6 +1,6 @@
 // Placement: boxes stacked so the major arrows all point downward — a box
 // sits above the boxes it depends on. Same document, same picture, every time.
-// Chosen by looking at SpendWell and hono side by side against the
+// Chosen by looking at a small app and hono side by side against the
 // alternative (boxes repelling, connections pulling like rubber bands, no
 // fixed meaning to position) — rows read as the clearer picture.
 import ELK from 'elkjs/lib/elk.bundled.js';

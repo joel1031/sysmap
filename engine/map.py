@@ -108,6 +108,7 @@ def build_map(repo_name: str, groups: list[list[str]], sg: dict, names=None,
 
 if __name__ == "__main__":
     import json
+    import sys
     import warnings
     from pathlib import Path
 
@@ -117,7 +118,7 @@ if __name__ == "__main__":
     from engine.grouping import leiden
     from engine.subsystem_graph import build_subsystem_graph
 
-    ROOT = Path("/Users/joelacosta/projects/SpendWell")
+    ROOT = Path(sys.argv[1] if len(sys.argv) > 1 else ".").resolve()
     g = build_file_graph(ROOT)
     sig = edge_signals(g["files"], g["edges"], ROOT)
     m = leiden(g["files"], g["edges"], sig["combined"])

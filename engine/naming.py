@@ -294,6 +294,7 @@ def name_layers(layers: list[list[str]], repo_name: str) -> dict[int, GroupName]
 
 if __name__ == "__main__":
     # smoke test on the current Leiden output
+    import sys
     from pathlib import Path
     import warnings
     warnings.filterwarnings("ignore")
@@ -303,7 +304,7 @@ if __name__ == "__main__":
     from engine.signals import edge_signals
     from engine.grouping import leiden
 
-    ROOT = Path("/Users/joelacosta/projects/SpendWell")
+    ROOT = Path(sys.argv[1] if len(sys.argv) > 1 else ".").resolve()
     g = build_file_graph(ROOT)
     sig = edge_signals(g["files"], g["edges"], ROOT)
     L = leiden(g["files"], g["edges"], sig["combined"])

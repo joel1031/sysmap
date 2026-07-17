@@ -107,7 +107,7 @@ depth), and any metric such as self-containment.
 - **Failure** (no credits / offline): the sentence area shows a plain "couldn't
   generate a summary" line; the rest of the panel still works.
 - **Cost shape:** one build-time call (naming) + at most one per connection
-  actually opened, cached thereafter. A fully-explored centerpiece-api is
+  actually opened, cached thereafter. A fully-explored Deno API is
   ~21 calls *ever* for a commit; each connection call is a handful of reference
   names, not code.
 
@@ -145,7 +145,7 @@ the file pairs; `map.py` emits `{from, to}` per crossing. This design threads
 the reference data through so each crossing carries the references that cross
 and their kind.
 
-Spike (done, on SpendWell): graphify's finer-grained nodes carry a clean,
+Spike (done, on the React Native app): graphify's finer-grained nodes carry a clean,
 correctly-cased name in their `label` field (`authMiddleware`, `plaidRoutes`,
 `classify()`), and `imports` / `calls` / `references` edges point from the
 importing file to the exact node, whose own `source_file` says which subsystem

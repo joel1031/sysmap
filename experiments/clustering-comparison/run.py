@@ -1,7 +1,8 @@
 """Orchestrate the experiment: extract -> signals -> methods -> HTML report.
 
-Leiden is the grouping method: across SpendWell/hono/documenso it kept 66-79% of
-dependencies inside subsystems vs HAC's 26-52%, i.e. 2-6x fewer arrows to draw.
+Leiden is the grouping method: across a React Native app, hono, and documenso it
+kept 66-79% of dependencies inside subsystems vs HAC's 26-52%, i.e. 2-6x fewer
+arrows to draw.
 methods.hac() stays in methods.py - its dendrogram is the candidate for the
 depth axis - but it no longer runs here.
 
@@ -9,7 +10,7 @@ File selection is whatever `git ls-files` returns for the repo - the whole tree,
 respecting .gitignore, narrowed by the extension filter. No target directories.
 
 Usage:
-  python run.py                       # defaults to SpendWell
+  python run.py                       # the repo you're standing in
   python run.py <repo_root>           # any repo
   python run.py <repo_root> --exts .py  # override the source extensions
 """
@@ -27,7 +28,7 @@ from engine.subsystem_graph import build_subsystem_graph
 from src import methods
 from src.report import render
 
-DEFAULT_ROOT = Path("/Users/joelacosta/projects/SpendWell")
+DEFAULT_ROOT = Path(".")
 OUT = Path(__file__).resolve().parent / "out"
 OUT.mkdir(exist_ok=True)
 

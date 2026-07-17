@@ -140,6 +140,7 @@ def describe(sg, groups, names=None, max_crossings=4) -> str:
 
 
 if __name__ == "__main__":
+    import sys
     import warnings
     from pathlib import Path
 
@@ -148,7 +149,7 @@ if __name__ == "__main__":
     from engine.signals import edge_signals
     from engine.grouping import leiden
 
-    ROOT = Path("/Users/joelacosta/projects/SpendWell")
+    ROOT = Path(sys.argv[1] if len(sys.argv) > 1 else ".").resolve()
     g = build_file_graph(ROOT)
     sig = edge_signals(g["files"], g["edges"], ROOT)
     m = leiden(g["files"], g["edges"], sig["combined"])

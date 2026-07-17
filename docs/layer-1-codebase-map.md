@@ -4,7 +4,7 @@ Vocabulary in this document is defined in [`CONTEXT.md`](../CONTEXT.md). Product
 [`CLAUDE.md`](../CLAUDE.md).
 
 # How to run:
-Run `/Users/joelacosta/projects/system-design/bin/map` from any dir.
+Run `bin/map` from inside any git repo.
 
 ## Where Layer 1 sits
 
@@ -109,7 +109,7 @@ heaviest arrow is always major (floor), and no source keeps more than 3 (`cap`).
 stay in the graph and are reported as a per-subsystem count — nothing is silently absent. On the
 documenso stress case this took 98 dependencies to 25 while keeping 61% of crossings and cutting mutual
 pairs on the drawn map from 45 to 3. Rejected alternatives: the **disparity filter** (a 5-subsystem graph
-has no degree distribution to be statistically significant against — it orphaned 2 of SpendWell's 5
+has no degree distribution to be statistically significant against — it orphaned 2 of the React Native app's 5
 subsystems); **top-N per source** (blind to weight); **both-ways share and incoming floors** (each
 defeats the cap — documenso sources reached 9 and 6 majors against a cap of 3). The known tension: the
 cap is outgoing-only, so a subsystem that is only *depended on* can drop off the backbone; the
@@ -139,8 +139,8 @@ only makes a bad grouping look credible.
 directories per repo, walked with graphify's own directory walker — which knows nothing about a repo's
 `.gitignore`. `git ls-files` gives the whole tracked tree for free, respecting whatever the repo already
 calls junk, narrowed by the existing code-extension filter. This also removed the last reason to exclude
-test files, so they're no longer excluded. Verified on all four repos: SpendWell's boundaries stayed
-clean with tests included (`charge.test.ts` sits right beside `charge.ts`); centerpiece-api and documenso
+test files, so they're no longer excluded. Verified on all four repos: the React Native app's boundaries stayed
+clean with tests included (`charge.test.ts` sits right beside `charge.ts`); the Deno API and documenso
 grew moderately in a way that reads as more honest, not smeared. hono fragmented more (9 → 20 drawn
 subsystems) because of `benchmarks/` and `runtime-tests/` — whole parallel directories, not test files
 beside source — but that's accepted as an honest reflection of that repo's actual shape rather than a
@@ -148,7 +148,7 @@ heuristic to filter around.
 
 **Rows won the placement decision.** Two layouts were built behind a switch: rows (boxes stacked so major
 dependencies all point one direction) and settle (boxes repelling, connections pulling like rubber bands,
-no fixed meaning to position). Rendered SpendWell and hono in both and looked — rows read as the clearer
+no fixed meaning to position). Rendered the React Native app and hono in both and looked — rows read as the clearer
 picture. Settle and its dependency (`d3-force`) were deleted; ELK is the only layout engine left. The
 question was reopened once ("fluid, like Obsidian's graph view") and resolved the same way: a physics
 layout reshuffles every run, so no spatial memory forms, and it throws away the one thing position
@@ -191,8 +191,8 @@ Test codebases, chosen to span size and shape:
 
 | Repo | Files | Shape |
 |---|---|---|
-| SpendWell | 41 | React Native + Node app |
-| centerpiece-api | 151 | Deno API service |
+| the RN app | 41 | React Native + Node app |
+| the Deno API | 151 | Deno API service |
 | hono | 186 | web framework |
 | documenso | 1,917 | full-stack app — the stress case, ~10× the next-largest repo |
 

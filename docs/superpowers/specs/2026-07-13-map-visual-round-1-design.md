@@ -6,7 +6,7 @@ selectable. Everything here was decided by looking at mockups side by side; the 
 
 ## What prompted it
 
-The first drawn map (centerpiece-api) read as tangled and frozen:
+The first drawn map (the Deno API) read as tangled and frozen:
 
 - Lines could only leave a box at its bottom-center and enter at its top-center, so any line to a
   neighbor or upward looped absurdly and lines piled onto each other.
@@ -84,6 +84,6 @@ adaptivity.
 
 ## How it's judged
 
-By eye, via `bin/map`, against SpendWell, centerpiece-api, and documenso (the swarm test for flow
+By eye, via `bin/map`, against the React Native app, the Deno API, and documenso (the swarm test for flow
 and the card test for long file lists), in both themes, in all states: at rest, box selected,
 connection selected, dragging while flow runs, chip open with ghosts shown.
