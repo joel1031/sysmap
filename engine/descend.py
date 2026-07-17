@@ -107,13 +107,10 @@ def descend(root: Path, graph: dict, files: list[str], parent: dict,
         groups = [[f] for f in sorted(files)]  # the files themselves
 
     sg = build_subsystem_graph(groups, edges)
-    names = None
+    names, how = None, "files"  # at the floor a file is its own name
     if not floor:
-        try:
-            from engine.naming import name_groups
-            names = name_groups(groups, repo_name, parent=parent.get("name"))
-        except Exception:
-            names = None
+        from engine.naming import label_groups
+        names, how = label_groups(groups, repo_name, sig, parent=parent.get("name"))
 
     doc = build_map(repo_name, groups, sg, names, graph.get("references"))
     box_of = {f: s["id"] for s in doc["subsystems"] for f in s["files"]}
@@ -130,6 +127,7 @@ def descend(root: Path, graph: dict, files: list[str], parent: dict,
 
     doc["parent"] = {k: parent.get(k) for k in ("id", "name", "description", "icon")}
     doc["floor"] = floor
+    doc["naming"] = how
     doc["exits"] = [e for e in _exits(graph["edges"], inside, owner, box_of, labels)
                     if e["id"] != parent.get("id")]
     return doc

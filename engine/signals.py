@@ -92,19 +92,30 @@ def structural_of(files, edges, pairs) -> dict:
 
 
 # --- lexical ---------------------------------------------------------------
-def lexical_of(files, repo_root: Path, pairs) -> dict:
-    """Cosine over identifiers and comments, one sparse dot per pair.
+def vocabulary(files, repo_root: Path):
+    """Each file's words, weighed by how rare they are across the repo.
 
-    The vocabulary is still fitted over every file — how rare a word is only
-    means anything against the whole corpus — but the N² product is never
-    formed. TfidfVectorizer L2-normalises its rows, so a dot IS the cosine.
+    Returns the matrix and the word each column stands for. The words are kept
+    rather than discarded because naming a subsystem without a model asks the
+    same question this matrix answers — which words are common in these files
+    and rare everywhere else — and reading every file twice to ask it twice
+    would be the one expensive thing on the path a keyless run always takes.
     """
     docs = []
     for f in files:
         text = (repo_root / f).read_text(errors="ignore")
         docs.append(" ".join(w for t in _TOK.findall(text) for w in _subwords(t)))
-    tfidf = TfidfVectorizer(token_pattern=r"[a-z][a-z0-9]+", min_df=1).fit_transform(docs)
-    tfidf = tfidf.tocsr()
+    vec = TfidfVectorizer(token_pattern=r"[a-z][a-z0-9]+", min_df=1)
+    return vec.fit_transform(docs).tocsr(), list(vec.get_feature_names_out())
+
+
+def lexical_of(tfidf, pairs) -> dict:
+    """Cosine over identifiers and comments, one sparse dot per pair.
+
+    The vocabulary is fitted over every file — how rare a word is only means
+    anything against the whole corpus — but the N² product is never formed.
+    TfidfVectorizer L2-normalises its rows, so a dot IS the cosine.
+    """
     L = {(i, j): float(tfidf[i].multiply(tfidf[j]).sum()) for i, j in pairs}
     return _norm(L)
 
@@ -145,16 +156,22 @@ def cochange_of(files, repo_root: Path, pairs, max_files=12):
 
 # --- combine ---------------------------------------------------------------
 def edge_signals(files, edges, repo_root: Path, weights=(1 / 3, 1 / 3, 1 / 3)):
-    """{'combined': {(i,j): weight}} for every pair with a structural edge."""
+    """{'combined': {(i,j): weight}} for every pair with a structural edge.
+
+    'tfidf' and 'vocab' come back too — the grouping never reads them, but
+    naming a subsystem without a model does.
+    """
     pairs = edge_pairs(files, edges)
     S = structural_of(files, edges, pairs)
-    L = lexical_of(files, repo_root, pairs)
+    tfidf, vocab = vocabulary(files, repo_root)
+    L = lexical_of(tfidf, pairs)
     C, n_commits = cochange_of(files, repo_root, pairs)
     wS, wL, wC = weights
     combined = {p: wS * S.get(p, 0.0) + wL * L.get(p, 0.0) + wC * C.get(p, 0.0)
                 for p in pairs}
-    return {"S": S, "L": L, "C": C, "combined": combined,
-            "files": files, "n_commits": n_commits, "n_pairs": len(pairs)}
+    return {"S": S, "L": L, "C": C, "combined": combined, "tfidf": tfidf,
+            "vocab": vocab, "files": files, "n_commits": n_commits,
+            "n_pairs": len(pairs)}
 
 
 if __name__ == "__main__":

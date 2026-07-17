@@ -43,8 +43,8 @@ CACHE.mkdir(exist_ok=True)
 
 # Bump when the map document's shape changes, so old cache entries are rebuilt
 # rather than served stale. 2: crossings carry references. 3: references carry
-# their call site and definition lines.
-SCHEMA = 3
+# their call site and definition lines. 4: the document says how it was named.
+SCHEMA = 4
 
 app = FastAPI(title="system-design map server")
 app.add_middleware(  # the web dev server runs on its own port
@@ -82,12 +82,11 @@ def _run_pipeline(root: Path, exts: set[str] | None) -> tuple[dict, dict]:
     sig = edge_signals(g["files"], g["edges"], root)
     m = leiden(g["files"], g["edges"], sig["combined"])
     sg = build_subsystem_graph(m["groups"], g["edges"])
-    try:
-        from engine.naming import name_groups
-        names = name_groups(m["groups"], root.name)
-    except Exception:
-        names = None
-    return build_map(root.name, m["groups"], sg, names, g["references"]), g
+    from engine.naming import label_groups
+    names, how = label_groups(m["groups"], root.name, sig)
+    doc = build_map(root.name, m["groups"], sg, names, g["references"])
+    doc["naming"] = how  # 'model' or 'words' — the page says which it's showing
+    return doc, g
 
 
 @app.get("/map")
