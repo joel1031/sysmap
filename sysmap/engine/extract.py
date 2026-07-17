@@ -11,12 +11,20 @@ edge whose name isn't where graphify says it is gets dropped; see
 really_there().
 """
 from __future__ import annotations
+import os
 import re
 import subprocess
+import threading
 from collections import Counter, defaultdict
+from contextlib import contextmanager
+from os.path import commonpath
 from pathlib import Path
 
 from graphify.extract import extract
+
+from sysmap.engine.cache import repo_cache
+
+_CHDIR_LOCK = threading.Lock()
 
 # graphify relation -> our reference kind (see CONTEXT.md: Reference). Only these
 # name a concrete thing in the target file; imports_from/contains do not.
@@ -43,9 +51,49 @@ def _line(loc: str | None) -> int | None:
     return int(s) if s.isdigit() else None
 
 
-def _abs(p: str | None) -> str | None:
-    """graphify reports paths relative to the CWD when a file lives under it."""
-    return None if p is None else str((Path.cwd() / p).resolve())
+def _abs(root: Path, p: str | None) -> str | None:
+    """graphify reports paths relative to `root` — see graphify_root()."""
+    return None if p is None else str((root / p).resolve())
+
+
+def graphify_root(files: list[Path]) -> Path:
+    """The directory graphify measures its paths from.
+
+    It is the deepest directory containing every file handed to it, which
+    graphify infers itself and never tells us. We have to infer it the same
+    way, because the paths it reports back mean nothing without it.
+
+    Not always the repo root: give it a repo whose code all sits under apps/
+    and it reports `web/src/index.ts`, measured from apps/.
+    """
+    if not files:
+        return Path(".")
+    if len(files) == 1:
+        return files[0].parent
+    return Path(commonpath([str(f) for f in files]))
+
+
+@contextmanager
+def _standing_in(d: Path):
+    """Run in `d`, then put the process back where it was.
+
+    graphify writes its AST cache to the current directory, and there is no
+    argument to say otherwise: `cache_root` sets where the cache goes AND what
+    the reported paths are measured from, so pointing it at a cache directory
+    makes every path relative to the cache — which fails, silently, leaving
+    bare filenames and a map with no edges at all.
+
+    So the process stands in the cache directory instead, and the paths are
+    measured from where the files actually are. The lock is because a working
+    directory belongs to the whole process, not to one caller of this function.
+    """
+    with _CHDIR_LOCK:
+        was = Path.cwd()
+        os.chdir(d)
+        try:
+            yield
+        finally:
+            os.chdir(was)
 
 
 # The languages the engine has been measured on and reads well: C, Go, Java,
@@ -82,7 +130,9 @@ def build_file_graph(repo_root: Path, exts: set[str] | None = None):
     exts = exts or CODE_EXT
     files = [f.resolve() for f in tracked_files(repo_root) if f.suffix in exts]
 
-    res = extract(files, cache_root=Path("."), parallel=False)
+    groot = graphify_root(files)
+    with _standing_in(repo_cache(repo_root)):
+        res = extract(files, cache_root=None, parallel=False)
     nodes, edges = res["nodes"], res["edges"]
 
     root = str(repo_root)
@@ -144,8 +194,8 @@ def build_file_graph(repo_root: Path, exts: set[str] | None = None):
     unresolved = fabricated = 0
     for e in edges:
         # edge['source_file'] is the importer file directly (reliable)
-        a = _abs(e.get("source_file"))
-        b = _abs(resolve(e["target"]))
+        a = _abs(groot, e.get("source_file"))
+        b = _abs(groot, resolve(e["target"]))
         if a is None or b is None:
             unresolved += 1
             continue

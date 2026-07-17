@@ -11,8 +11,11 @@ Parsing a large repo takes minutes, so results are cached per repo. The cache
 remembers which commit the repo was on: same commit → instant answer, new
 commit → the pipeline runs again. `refresh=true` forces a re-run regardless.
 
-Run from the repo root (graphify writes its AST cache relative to the CWD):
-  experiments/clustering-comparison/.venv/bin/uvicorn server.app:app
+Runs from anywhere — everything it keeps goes to the cache directory, and the
+repo it maps is named in the request, never inferred from where the process
+is standing.
+
+  uvicorn sysmap.server.app:app
 """
 from __future__ import annotations
 import json
@@ -32,14 +35,12 @@ warnings.filterwarnings("ignore")
 from sysmap.engine.env import load_env
 load_env()  # ANTHROPIC_API_KEY for naming; without it subsystems come out unnamed
 
+from sysmap.engine.cache import repo_cache
 from sysmap.engine.extract import build_file_graph
 from sysmap.engine.signals import edge_signals
 from sysmap.engine.grouping import leiden
 from sysmap.engine.subsystem_graph import build_subsystem_graph
 from sysmap.engine.map import build_map
-
-CACHE = Path(__file__).resolve().parent / "cache"
-CACHE.mkdir(exist_ok=True)
 
 # Bump when the map document's shape changes, so old cache entries are rebuilt
 # rather than served stale. 2: crossings carry references. 3: references carry
@@ -65,9 +66,13 @@ def _cache_file(root: Path, exts: str | None, kind: str = "") -> Path:
     both the sentences and the descents are written back one entry at a time,
     and the graph is far the biggest of the four. Keeping them apart means
     caching one sentence doesn't rewrite a repo's whole edge list.
+
+    All of it sits in this repo's cache directory, which is already keyed by
+    the repo's path — so the name here only has to separate one set of
+    extensions from another.
     """
-    key = sha1("|".join([str(root), exts or ""]).encode()).hexdigest()[:8]
-    return CACHE / f"{root.name}-{key}{kind}.json"
+    key = sha1((exts or "").encode()).hexdigest()[:8]
+    return repo_cache(root) / f"map-{key}{kind}.json"
 
 
 def _run_pipeline(root: Path, exts: set[str] | None) -> tuple[dict, dict]:

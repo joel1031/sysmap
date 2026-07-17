@@ -7,6 +7,8 @@ name = "sysmap"
 version = "0.1.0"
 description = "A traversable map of your codebase — what its subsystems are, and how they actually connect."
 requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
 keywords = ["codebase", "architecture", "visualization", "tree-sitter"]
 
 # Every one of these is imported by sysmap/. Versions are floors, not pins:
